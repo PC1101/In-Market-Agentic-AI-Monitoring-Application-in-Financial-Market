@@ -1,0 +1,16 @@
+# Core dependencies for the Avellaneda-Lee stat-arb backtest.
+# Verified working on Python 3.11 with the versions below.
+# The code was modernized for pandas >= 2.0 (DataFrame.append removed, yaml.load Loader).
+pandas>=2.0,<3.0
+numpy>=1.24,<2.0
+statsmodels>=0.14
+scikit-learn>=1.3
+scipy>=1.10
+matplotlib>=3.6
+PyYAML>=6.0
+tqdm>=4.60
+
+# Optional: only needed for the parallel threshold grid-search in
+# mains/optimise_trading_rules.py and src/data/hist_pca_factoring.py.
+# A single backtest (run_backtest.py) does NOT require ray.
+# ray>=2.0

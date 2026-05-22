@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pip list)",
+      "Bash(python -c \"import pandas as pd; df=pd.read_csv\\('data/xlf/xlf_full_hist_2020_11_20.csv', index_col='Date', parse_dates=True\\).sort_index\\(\\); print\\('rows',len\\(df\\)\\); print\\('span', df.index.min\\(\\).date\\(\\), '->', df.index.max\\(\\).date\\(\\)\\); ac=[c for c in df.columns if 'Adj. Close' in c]; print\\('adj close cols', len\\(ac\\)\\); print\\('sample', ac[:5]\\)\")",
+      "Bash(python run_backtest.py --etf xlf --defactoring pca --start 2019-01-02 --end 2020-11-19)",
+      "Bash(grep -vE \"FutureWarning|warnings.warn|return func|pct_change|^\\\\s*$\")",
+      "Bash(python run_backtest.py --etf xlf --defactoring etf --start 2019-01-02 --end 2020-11-19)",
+      "Bash(python run_backtest.py --etf xlf --defactoring pca)",
+      "Bash(grep -vE \"FutureWarning|warnings.warn|return func|pct_change|invalid value|np.log|np.sqrt|RuntimeWarning|kappa =|sig_eq =|^\\\\s*$\")",
+      "Bash(python run_backtest.py --etf xlf --start 2019-01-02 --end 2020-11-19 --show-trades 0)",
+      "Bash(python optimise.py --etf xlf --start 2019-01-02 --end 2020-11-19 --kappa-grid 0,30 --entry-grid 1.25,1.75 --exit-grid 0.5 --sl-grid -0.10,none)",
+      "Bash(python optimise.py --etf xlf --start 2019-01-02 --end 2020-11-19 --kappa-grid 0,30 --entry-grid 1.25,1.75 --exit-grid 0.5 --sl-grid 0.10,none)",
+      "Bash(grep -vE \"OU fit|FutureWarning|warnings.warn|return func|pct_change|invalid value|np.log|np.sqrt|RuntimeWarning|kappa =|sig_eq =|^\\\\s*$\")",
+      "Bash(grep -vE \"^\\\\s*$\")",
+      "Bash(python -c \"from arbitragelab.other_approaches import PCAStrategy; print\\('IMPORT OK'\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python run_pca_backtest.py)",
+      "Bash(grep -vE \"FutureWarning|warnings.warn|return func|RuntimeWarning|invalid value|divide by zero|np\\\\.|^\\\\s*$\")",
+      "Bash(python run_backtest.py --etf xlf --defactoring pca --cost 0 --show-trades 0)",
+      "Bash(python run_backtest.py --etf xlf --defactoring pca --show-trades 0)",
+      "Bash(python run_backtest.py --etf xlf --start 2019-01-02 --end 2020-11-19 --cost 0 --show-trades 0)",
+      "Bash(python run_full_universe.py --start 2014-01-02 --end 2014-12-31 --sectors xlf,xlk,xlu --tag _validate)",
+      "Bash(awk '{print $5, $9}')"
+    ]
+  }
+}
