@@ -1,9 +1,11 @@
 # data.py — download and cache S&P 500 adjusted close prices
 
+import io
 import os
 import logging
 
 import pandas as pd
+import requests
 import yfinance as yf
 
 import config
@@ -15,9 +17,11 @@ SP500_CACHE = os.path.join(config.DATA_DIR, "sp500_prices.csv")
 
 def get_sp500_tickers() -> list[str]:
     """Fetch current S&P 500 tickers from Wikipedia."""
-    tables = pd.read_html(
-        "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-    )
+    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; XSectional/1.0; +https://github.com/PC1101)"}
+    response = requests.get(url, headers=headers, timeout=15)
+    response.raise_for_status()
+    tables = pd.read_html(io.StringIO(response.text))
     tickers = tables[0]["Symbol"].str.replace(".", "-", regex=False).tolist()
     return tickers
 
