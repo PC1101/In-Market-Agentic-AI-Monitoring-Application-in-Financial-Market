@@ -63,7 +63,7 @@ def test_run_backtest_weights_applied_one_month_forward(prices_5y):
     """
     monthly_dates = pd.date_range("2001-01-31", periods=12, freq="ME")
     weights = pd.DataFrame(0.0, index=monthly_dates, columns=["A", "B", "C", "D", "E"])
-    weights.iloc[0]["A"] = 1.0   # only month 0 is non-zero
+    weights.loc[weights.index[0], "A"] = 1.0   # only month 0 is non-zero
 
     result = run_backtest(weights, prices_5y)
 
