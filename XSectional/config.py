@@ -15,3 +15,7 @@ DATA_DIR = "data"
 
 MISSING_DATA_THRESHOLD = 0.20  # Drop tickers with > 20% missing data
 MIN_STOCKS_PER_LEG     = 10    # Minimum stocks required per long/short leg
+
+# Stress-test sub-period
+STRESS_START = "2009-01-01"
+STRESS_END   = "2016-12-31"
