@@ -78,3 +78,28 @@ def test_generate_report_prints_metrics(monthly_returns, tmp_path, monkeypatch, 
     captured = capsys.readouterr()
     assert "Sharpe" in captured.out
     assert "Drawdown" in captured.out
+
+
+def test_generate_report_custom_filename(monthly_returns, tmp_path, monkeypatch):
+    """Custom filename parameter saves PNG under the given name."""
+    import config
+    monkeypatch.setattr(config, "DATA_DIR", str(tmp_path))
+    generate_report(monthly_returns, filename="tearsheet_stress.png")
+    assert (tmp_path / "tearsheet_stress.png").exists()
+
+
+def test_generate_report_custom_label_in_stdout(monthly_returns, tmp_path, monkeypatch, capsys):
+    """Custom label appears in the printed header."""
+    import config
+    monkeypatch.setattr(config, "DATA_DIR", str(tmp_path))
+    generate_report(monthly_returns, label="Stress (2009–2016)", filename="tearsheet_stress.png")
+    captured = capsys.readouterr()
+    assert "Stress (2009–2016)" in captured.out
+
+
+def test_generate_report_default_filename_unchanged(monthly_returns, tmp_path, monkeypatch):
+    """Calling without filename still produces tearsheet.png (backward compat)."""
+    import config
+    monkeypatch.setattr(config, "DATA_DIR", str(tmp_path))
+    generate_report(monthly_returns)
+    assert (tmp_path / "tearsheet.png").exists()
