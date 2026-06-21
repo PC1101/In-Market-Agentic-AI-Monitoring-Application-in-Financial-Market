@@ -21,7 +21,9 @@
       "Bash(python run_backtest.py --etf xlf --defactoring pca --show-trades 0)",
       "Bash(python run_backtest.py --etf xlf --start 2019-01-02 --end 2020-11-19 --cost 0 --show-trades 0)",
       "Bash(python run_full_universe.py --start 2014-01-02 --end 2014-12-31 --sectors xlf,xlk,xlu --tag _validate)",
-      "Bash(awk '{print $5, $9}')"
+      "Bash(awk '{print $5, $9}')",
+      "Bash(python:*)",
+      "Bash(pip install:*)"
     ]
   }
 }

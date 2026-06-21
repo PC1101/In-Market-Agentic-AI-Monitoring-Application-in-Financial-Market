@@ -1,0 +1,21 @@
+# Pairs trading configuration
+# Dates and prices_file_path are inherited from optimise_trading_rules.yml.
+# This file contains only the pairs-specific parameters.
+
+pairs:
+  n_window: 60              # Rolling estimation window (trading days)
+  p_value_cutoff: 0.05      # Engle-Granger MacKinnon p-value threshold
+  max_pairs: 50             # Maximum pairs to trade per sector per reselection
+  reselect_freq: 20         # Days between pair reselections (~monthly)
+  kappa_min: 8.4            # Min OU mean-reversion speed (252/30, same as baseline)
+  s_thresholds:
+    s_bo: -1.25             # Long spread entry
+    s_bc: -0.50             # Long spread exit
+    s_so: 1.25              # Short spread entry
+    s_sc: 0.50              # Short spread exit
+  sl: -0.10                 # Stop-loss per pair position
+  transaction_cost:
+    - 0.0010                # Entry cost (10 bps — 2x baseline: 2 stock legs per side)
+    - 0.0010                # Exit cost
+  weighting_scheme: "equal_weighted"
+  long_only: false

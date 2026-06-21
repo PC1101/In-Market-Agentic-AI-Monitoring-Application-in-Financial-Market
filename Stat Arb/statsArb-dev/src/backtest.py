@@ -43,7 +43,7 @@ class bt(object):
 
 
 
-    def run(self, weighting_scheme="equal_weighted", sl=-0.10, long_only=False, transaction_cost=(0.0005, 0.0008), s_thresholds=None):
+    def run(self, weighting_scheme="equal_weighted", sl=-0.10, long_only=False, short_only=False, transaction_cost=(0.0005, 0.0008), s_thresholds=None):
 
         ## {'s_bo': -1.25, 's_bc': -0.75, 's_so': 1.25, 's_sc': 0.50 } ##
 
@@ -69,7 +69,7 @@ class bt(object):
         port_ret = pd.concat([long_port_ret.rename('long_ret'), short_port_ret.rename('short_ret'), cum_short_port_ret.rename("cum_short_ret"), self.bt_ret_df[self.etf_name]], axis=1).fillna(0)
 
 
-        port_ret, sharpe, maxdd, endpnl = bt_tools.port_performance(port_ret, long_only=long_only)
+        port_ret, sharpe, maxdd, endpnl = bt_tools.port_performance(port_ret, long_only=long_only, short_only=short_only)
 
         ## Expose intermediates so callers can inspect the full process
         ## (trade blotter, equity curve, daily positions) after run().

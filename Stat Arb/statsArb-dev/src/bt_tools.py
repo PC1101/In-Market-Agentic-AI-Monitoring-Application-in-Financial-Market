@@ -238,17 +238,22 @@ def plot_backtest_performance(port_ret, etf_name=None, trades=None, sharpe=None,
     return fig
 
 
-def port_performance(port_ret_df, long_only=False):
+def port_performance(port_ret_df, long_only=False, short_only=False):
     '''
     Calculate end pnl, sharpe, maxdd from port_ret
     :param port_ret_df: df with 'long_ret' and 'short_ret'
+    :param long_only: use only the long leg
+    :param short_only: use only the short leg (profit = -short_ret)
     :return:
     '''
     port_ret_df[['long_pnl', 'short_pnl']] = (port_ret_df[['long_ret','short_ret']] + 1).cumprod()
 
-    ## Assuming Leverage ratio of 2E
-    port_ret_df['cum_ret'] = (port_ret_df['long_ret'] - port_ret_df['cum_short_ret']).fillna(0) if not long_only else port_ret_df[
-        'long_ret']
+    if short_only:
+        port_ret_df['cum_ret'] = -port_ret_df['short_ret']
+    elif long_only:
+        port_ret_df['cum_ret'] = port_ret_df['long_ret']
+    else:
+        port_ret_df['cum_ret'] = (port_ret_df['long_ret'] - port_ret_df['cum_short_ret']).fillna(0)
     port_ret_df['cum_pnl'] = (port_ret_df['cum_ret'] + 1).cumprod()
     port_ret_df['max_dd'] = port_ret_df['cum_pnl'].rolling(126, min_periods=1).apply(dd).dropna()
 
