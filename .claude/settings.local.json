@@ -23,7 +23,14 @@
       "Bash(python run_full_universe.py --start 2014-01-02 --end 2014-12-31 --sectors xlf,xlk,xlu --tag _validate)",
       "Bash(awk '{print $5, $9}')",
       "Bash(python:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(xargs grep:*)",
+      "Bash(find /c/Users/dungh/Downloads/In-Market-Agentic-AI-Monitoring-Application-in-Financial-Market -type f -name *cache* -o -name *pickle* -o -name *.pkl)",
+      "Bash(find /c/Users/dungh/Downloads/In-Market-Agentic-AI-Monitoring-Application-in-Financial-Market -type f \\\\\\(-name *.py -o -name *.txt -o -name *.md \\\\\\))",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.tiingo.com)",
+      "WebFetch(domain:www.alphavantage.co)"
     ]
   }
 }

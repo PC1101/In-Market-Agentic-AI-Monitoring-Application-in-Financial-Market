@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 from src.ou_process import OUProcess
 from src.bt_tools import get_position_df, dd, single_stock_stats_arb
 from src import bt_tools
+from src.regime_filter import RegimeFilter
 
 class bt(object):
-    def __init__(self, prices_file_path, etf_name, st_dt, ed_dt, n_window=60, defactoring='etf', performance_only=False, kappa_min=None, progress=False):
+    def __init__(self, prices_file_path, etf_name, st_dt, ed_dt, n_window=60, defactoring='etf', performance_only=False, kappa_min=None, progress=False, regime_filter_path=None, stress_threshold=0.40):
 
         ## ETF and single stocks prices
         df = pd.read_csv(prices_file_path, index_col=['Date'], parse_dates=True).sort_index()
@@ -41,6 +42,21 @@ class bt(object):
         self.bt_ret_df = self.ret_df.loc[self.st_dt: self.ed_dt].iloc[:-1]
         self.performance_only = performance_only
 
+        ## Optional FinGPT regime filter
+        self.regime_mask = None
+        if regime_filter_path is not None:
+            stress = RegimeFilter.load(regime_filter_path)
+            self.regime_mask = RegimeFilter.to_mask(stress, stress_threshold)
+            suppressed = int((~self.regime_mask.reindex(self.bt_ret_df.index, fill_value=True)).sum())
+            print(f"[FinGPT] Regime filter loaded from {regime_filter_path}")
+            print(f"[FinGPT] Entry suppression active on {suppressed} of "
+                  f"{len(self.bt_ret_df)} trading days "
+                  f"(threshold={stress_threshold:.0%}).")
+            print("  WARNING: FinGPT was trained on post-crisis financial text. "
+                  "Sentiment scores for historical crisis windows may reflect "
+                  "hindsight bias. Inspect results/fingpt_stress_vs_vix_*.png "
+                  "before drawing performance conclusions.")
+
 
 
     def run(self, weighting_scheme="equal_weighted", sl=-0.10, long_only=False, short_only=False, transaction_cost=(0.0005, 0.0008), s_thresholds=None):
@@ -49,8 +65,17 @@ class bt(object):
 
         s_threshold = self.s_threshold if not s_thresholds else s_thresholds
         long_entry = self.s_scores_df < s_threshold['s_bo']
-        long_exit = self.s_scores_df > s_threshold['s_bc']
         short_entry = self.s_scores_df > s_threshold['s_so']
+
+        ## Regime filter: suppress new entries on high-stress days.
+        ## Exits are NOT masked — open positions still exit at their normal signal.
+        if self.regime_mask is not None:
+            mask = self.regime_mask.reindex(long_entry.index, fill_value=True)
+            mask_2d = mask.values.reshape(-1, 1)
+            long_entry  = long_entry  & mask_2d
+            short_entry = short_entry & mask_2d
+
+        long_exit = self.s_scores_df > s_threshold['s_bc']
         short_exit = self.s_scores_df < s_threshold['s_sc']
 
 

@@ -82,6 +82,14 @@ def parse_args(cfg):
     parser.add_argument("--show", "--plot", action="store_true", dest="show",
                         help="Display the performance chart interactively "
                              "(it is always saved to performance.png regardless).")
+    parser.add_argument("--regime-filter", default=None, metavar="PATH",
+                        help="Path to a pre-computed FinGPT stress CSV "
+                             "(e.g. data/news/stress_xlf.csv). "
+                             "Run scripts/cache_news.py then scripts/compute_stress.py first.")
+    parser.add_argument("--stress-threshold", type=float, default=0.40,
+                        help="Fraction of negative headlines above which new trade entries "
+                             "are suppressed (default: 0.40 = 40%%). Ignored if "
+                             "--regime-filter is not set.")
     return parser.parse_args()
 
 
@@ -185,6 +193,8 @@ def main():
         performance_only=True,   # we render our own (non-blocking) charts below
         kappa_min=kappa_min,
         progress=True,           # show a tqdm bar over the OU fitting loop
+        regime_filter_path=args.regime_filter,
+        stress_threshold=args.stress_threshold,
     )
 
     sharpe, maxdd, endpnl = model.run(

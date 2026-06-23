@@ -32,3 +32,13 @@ holdings_path:
   xlv: "data/xlv/holdings-daily-us-en-xlv.xlsx"
   xly: "data/xly/holdings-daily-us-en-xly.xlsx"
 full_mkt_data: "data/full_mkt_data/all_etf_comp.pkl"
+
+# FinGPT regime stress filter (optional).
+# To activate: run scripts/cache_news.py then scripts/compute_stress.py,
+# then pass --regime-filter to run_backtest.py.
+fingpt:
+  default_base_model: "meta-llama/Llama-2-7b-hf"
+  default_lora_model: "FinGPT/fingpt-sentiment_llama2-7b_lora"
+  stress_threshold: 0.40       # suppress entries above this fraction of negative headlines
+  news_cache_dir: "data/news"
+  gdelt_coverage_start: "2013-02-18"   # GDELT 2.0 start; pre-2013 = NaN = no suppression

@@ -14,3 +14,17 @@ tqdm>=4.60
 # mains/optimise_trading_rules.py and src/data/hist_pca_factoring.py.
 # A single backtest (run_backtest.py) does NOT require ray.
 # ray>=2.0
+
+# FinGPT regime stress filter (optional — only needed if using --regime-filter).
+# Install with: pip install torch transformers peft accelerate bitsandbytes huggingface_hub datasets yfinance
+# GPU (CUDA) strongly recommended; 7B model requires ~6 GB VRAM with 4-bit quantization.
+# News source: FNSPID dataset (Zihan1004/FNSPID on HuggingFace) — free, 1999-2023.
+# torch>=2.0
+# transformers>=4.35
+# peft>=0.6
+# accelerate>=0.24
+# bitsandbytes>=0.41
+# huggingface_hub>=0.20   # for download_fnspid.py
+# datasets>=2.14          # HuggingFace datasets library (primary FNSPID download method)
+# pyarrow>=12.0           # chunked parquet writing for large FNSPID CSV (23 GB)
+# yfinance>=0.2           # VIX download in diagnostic chart (compute_stress.py)
