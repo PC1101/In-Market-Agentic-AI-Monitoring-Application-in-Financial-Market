@@ -84,7 +84,21 @@ def main():
                    help="Per-side transaction cost fraction (default 0 = frictionless).")
     p.add_argument("--sl", type=float, default=-0.10, help="Stop-loss (default -0.10).")
     p.add_argument("--tag", default=None, help="Label for the output sub-folder.")
+    p.add_argument("--pit", action="store_true",
+                   help="Use point-in-time sector sleeves (data/pit/{etf}_pit.csv, "
+                        "built by scripts/build_pit_sleeves.py) instead of the 2020 "
+                        "holdings snapshot — survivorship-bias control.")
     args = p.parse_args()
+
+    if args.pit:
+        pit_paths = {s: os.path.join("data", "pit", f"{s}_pit.csv")
+                     for s in cfg["prices_file_path"]}
+        missing = [s for s, f in pit_paths.items() if not os.path.exists(f)]
+        cfg["prices_file_path"] = {s: f for s, f in pit_paths.items()
+                                   if os.path.exists(f)}
+        print(f"PIT mode: using point-in-time sleeves from data/pit/ "
+              f"({len(cfg['prices_file_path'])} available"
+              + (f"; missing: {missing}" if missing else "") + ")")
 
     kappa_min = args.kappa_min if args.kappa_min > 0 else None
     weighting = cfg.get("weighting_scheme", "equal_weighted")

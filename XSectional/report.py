@@ -44,10 +44,19 @@ def compute_metrics(returns: pd.Series) -> dict:
     }
 
 
-def generate_report(returns: pd.Series) -> None:
+def generate_report(
+    returns: pd.Series,
+    label: str = "Full (2000–2025)",
+    filename: str = "tearsheet.png",
+) -> None:
     """
     Print performance metrics to stdout and save a 4-panel tearsheet PNG
-    to {config.DATA_DIR}/tearsheet.png.
+    to {config.DATA_DIR}/{filename}.
+
+    Args:
+        returns:  Monthly returns Series.
+        label:    Human-readable period label shown in the header and panel titles.
+        filename: Output PNG filename (saved inside config.DATA_DIR).
 
     Panels:
       1. Cumulative equity curve (log scale)
@@ -57,12 +66,12 @@ def generate_report(returns: pd.Series) -> None:
     """
     metrics = compute_metrics(returns)
 
-    print("\n=== XSectional Momentum Tearsheet ===")
-    for label, value in metrics.items():
-        if "Drawdown" in label or "Return" in label or "Volatility" in label:
-            print(f"  {label}: {value:.2%}")
+    print(f"\n=== XSectional Momentum Tearsheet — {label} ===")
+    for lbl, value in metrics.items():
+        if "Drawdown" in lbl or "Return" in lbl or "Volatility" in lbl:
+            print(f"  {lbl}: {value:.2%}")
         else:
-            print(f"  {label}: {value:.2f}")
+            print(f"  {lbl}: {value:.2f}")
 
     cum = (1 + returns).cumprod()
     rolling_max = cum.cummax()
@@ -81,7 +90,7 @@ def generate_report(returns: pd.Series) -> None:
     # Panel 1: Equity curve
     ax1 = fig.add_subplot(gs[0])
     ax1.plot(cum.index, cum.values, linewidth=1.5)
-    ax1.set_title("Cumulative Equity Curve (log scale)", fontsize=11)
+    ax1.set_title(f"Cumulative Equity Curve (log scale) — {label}", fontsize=11)
     ax1.set_ylabel("Growth of $1")
     ax1.set_yscale("log")
     ax1.grid(True, alpha=0.3)
@@ -90,7 +99,7 @@ def generate_report(returns: pd.Series) -> None:
     ax2 = fig.add_subplot(gs[1])
     colors = ["steelblue" if r >= 0 else "tomato" for r in annual_returns.values]
     ax2.bar(annual_returns.index.year, annual_returns.values * 100, color=colors)
-    ax2.set_title("Annual Returns (%)", fontsize=11)
+    ax2.set_title(f"Annual Returns (%) — {label}", fontsize=11)
     ax2.set_ylabel("Return (%)")
     ax2.axhline(0, color="black", linewidth=0.8)
     ax2.grid(True, alpha=0.3, axis="y")
@@ -98,7 +107,7 @@ def generate_report(returns: pd.Series) -> None:
     # Panel 3: Rolling Sharpe
     ax3 = fig.add_subplot(gs[2])
     ax3.plot(rolling_sharpe.index, rolling_sharpe.values, linewidth=1.2, color="darkgreen")
-    ax3.set_title("Rolling 12-Month Sharpe Ratio", fontsize=11)
+    ax3.set_title(f"Rolling 12-Month Sharpe Ratio — {label}", fontsize=11)
     ax3.set_ylabel("Sharpe")
     ax3.axhline(0, color="black", linewidth=0.8)
     ax3.grid(True, alpha=0.3)
@@ -109,12 +118,12 @@ def generate_report(returns: pd.Series) -> None:
         drawdown.index, drawdown.values * 100, 0,
         color="tomato", alpha=0.5, linewidth=0,
     )
-    ax4.set_title("Drawdown (%)", fontsize=11)
+    ax4.set_title(f"Drawdown (%) — {label}", fontsize=11)
     ax4.set_ylabel("Drawdown (%)")
     ax4.grid(True, alpha=0.3)
 
     os.makedirs(config.DATA_DIR, exist_ok=True)
-    output_path = os.path.join(config.DATA_DIR, "tearsheet.png")
+    output_path = os.path.join(config.DATA_DIR, filename)
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"\n  Tearsheet saved → {output_path}")

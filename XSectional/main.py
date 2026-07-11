@@ -7,6 +7,7 @@ from signals import compute_momentum_scores
 from portfolio import construct_portfolio
 from backtest import run_backtest
 from report import generate_report
+import config
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,8 +32,25 @@ def main() -> None:
     returns = run_backtest(weights, prices)
     logger.info("  %d monthly periods simulated", len(returns))
 
-    logger.info("Step 5/5 — Generating tearsheet...")
-    generate_report(returns)
+    logger.info("Step 5/5 — Generating tearsheet (full period)...")
+    generate_report(
+        returns,
+        label=f"Full ({config.START_DATE[:4]}–{config.END_DATE[:4]})",
+        filename="tearsheet.png",
+    )
+
+    logger.info(
+        "Stress test — %s to %s sub-period...",
+        config.STRESS_START[:4],
+        config.STRESS_END[:4],
+    )
+    stress_returns = returns.loc[config.STRESS_START : config.STRESS_END]
+    logger.info("  %d monthly periods in stress window", len(stress_returns))
+    generate_report(
+        stress_returns,
+        label=f"Stress ({config.STRESS_START[:4]}–{config.STRESS_END[:4]})",
+        filename=f"tearsheet_stress_{config.STRESS_START[:4]}_{config.STRESS_END[:4]}.png",
+    )
 
 
 if __name__ == "__main__":
