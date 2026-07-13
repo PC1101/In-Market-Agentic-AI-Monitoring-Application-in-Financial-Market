@@ -16,7 +16,7 @@ LOOK-AHEAD GUARDS:
          and the diagnostic chart in results/.
 
 NaN handling:
-  NaN stress → True (entry allowed). Arises when FNSPID has no coverage for
+  NaN stress -> True (entry allowed). Arises when FNSPID has no coverage for
   a date or ticker. The backtest runs unmodified for those dates.
 """
 import os
@@ -90,9 +90,9 @@ class RegimeFilter:
 
         nan_days  = stress.isna().sum()
         above_thr = (stress > 0.40).sum()
-        print(f"[RegimeFilter] Stress series saved → {output_path}")
+        print(f"[RegimeFilter] Stress series saved -> {output_path}")
         print(f"  Total days       : {len(stress)}")
-        print(f"  No-headline days : {nan_days} (NaN stress → entry allowed)")
+        print(f"  No-headline days : {nan_days} (NaN stress -> entry allowed)")
         print(f"  Days stress>0.40 : {above_thr} "
               f"({above_thr / max(stress.notna().sum(), 1):.1%} of days with data)")
 
@@ -122,9 +122,9 @@ class RegimeFilter:
         """
         Convert a stress series to a boolean entry-allowed mask.
 
-        True  → stress below threshold → allow new long/short entries.
-        False → stress at/above threshold → suppress new entries.
-        NaN   → True (no FNSPID coverage → no suppression).
+        True  -> stress below threshold -> allow new long/short entries.
+        False -> stress at/above threshold -> suppress new entries.
+        NaN   -> True (no FNSPID coverage -> no suppression).
 
         Parameters
         ----------

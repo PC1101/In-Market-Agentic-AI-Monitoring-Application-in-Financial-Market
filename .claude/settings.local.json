@@ -30,7 +30,10 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.tiingo.com)",
-      "WebFetch(domain:www.alphavantage.co)"
+      "WebFetch(domain:www.alphavantage.co)",
+      "Bash(winget search:*)",
+      "Bash(curl -s https://api.github.com/repos/psychopy/psychopy/releases/latest)",
+      "Bash(curl:*)"
     ]
   }
 }
