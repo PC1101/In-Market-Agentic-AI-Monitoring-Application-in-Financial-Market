@@ -25,6 +25,13 @@ from abc import ABC, abstractmethod
 from .schemas import State, Action
 
 
+def _extract_as_of(text: str) -> str:
+    """Pull the ``as_of`` date out of a rendered user prompt (shared by the
+    supervisor and news-mode branches of ``OfflineStubModel``)."""
+    m = re.search(r"as_of\):\s*([0-9-]+)", text)
+    return m.group(1) if m else ""
+
+
 class LocalModel(ABC):
     """Interface for a local text-completion model returning JSON."""
 
@@ -49,28 +56,17 @@ class LocalModel(ABC):
 
 
 class OfflineStubModel(LocalModel):
-    """Deterministic rule-based stand-in (no LLM). For offline pipeline tests."""
+    """Deterministic rule-based stand-in (no LLM). For offline pipeline tests.
+
+    Stands in for BOTH the Performance Supervisor Agent and the News Context Agent,
+    dispatching on which system prompt it is given.
+    """
 
     name = "offline-stub"
 
     def complete(self, system: str, user: str) -> dict:
         if "News Context Agent" in system:
-            n_articles = user.count("\n- [")
-            risky = any(t in user.lower() for t in ("meltdown", "crash", "liquidat", "crisis"))
-            risk = "HIGH" if (risky and n_articles >= 3) else ("ELEVATED" if risky else "LOW")
-            m = re.search(r"as_of\):\s*([0-9-]+)", user)
-            return {
-                "overall_risk": risk,
-                "risk_flags": (
-                    [{"flag": "stress_language_in_news", "evidence": "risk terms present in headlines"}]
-                    if risky else []
-                ),
-                "narrative": f"Reviewed {n_articles} filtered articles; "
-                             + ("stress language present." if risky else "no stress language."),
-                "confidence": 0.5,
-                "as_of": m.group(1) if m else "",
-                "n_articles": n_articles,
-            }
+            return self._complete_news(user)
         ctx = self._parse_user(user)
         tel = ctx.get("telemetry", {})
         alarms = ctx.get("detector_alarms", {})
@@ -108,12 +104,32 @@ class OfflineStubModel(LocalModel):
         }
 
     @staticmethod
+    def _complete_news(user: str) -> dict:
+        """News-mode branch: derive a schema-valid ``NewsFlags`` payload from the
+        rendered news-agent user prompt, without any LLM."""
+        n_articles = user.count("\n- [")
+        risky = any(t in user.lower() for t in ("meltdown", "crash", "liquidat", "crisis"))
+        risk = "HIGH" if (risky and n_articles >= 3) else ("ELEVATED" if risky else "LOW")
+        return {
+            "overall_risk": risk,
+            "risk_flags": (
+                [{"flag": "stress_language_in_news", "evidence": "risk terms present in headlines"}]
+                if risky else []
+            ),
+            "narrative": f"Reviewed {n_articles} filtered articles; "
+                         + ("stress language present." if risky else "no stress language."),
+            "confidence": 0.5,
+            "as_of": _extract_as_of(user),
+            "n_articles": n_articles,
+        }
+
+    @staticmethod
     def _parse_user(user: str) -> dict:
         """Recover the structured context from the user prompt text."""
         ctx: dict = {}
-        m = re.search(r"as_of\):\s*([0-9-]+)", user)
-        if m:
-            ctx["as_of"] = m.group(1)
+        as_of = _extract_as_of(user)
+        if as_of:
+            ctx["as_of"] = as_of
         ctx["telemetry"] = _grab_json_after(user, "Strategy telemetry:")
         ctx["detector_alarms"] = _grab_json_after(user, "visible so far:")
         return ctx
