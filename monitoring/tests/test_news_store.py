@@ -32,11 +32,33 @@ def test_detect_columns(raw_csv):
 
 def test_build_store_filters_dates_and_partitions_by_year(tmp_path, raw_csv):
     out = tmp_path / "store"
-    n = build_store(raw_csv, out, start="2003-01-01", end="2016-12-31", chunksize=2)
-    assert n == 3  # 1999 row and unparseable row dropped
+    stats = build_store(raw_csv, out, start="2003-01-01", end="2016-12-31", chunksize=2)
+    assert stats["read"] == 5
+    assert stats["kept"] == 3  # 1999 row (out of range) and unparseable row dropped
+    assert stats["dropped_bad_date"] == 1  # only "not-a-date"; 1999 parses fine
     assert (out / "year=2007.parquet").exists()
     assert (out / "year=2010.parquet").exists()
     assert not (out / "year=1999.parquet").exists()
+
+
+def test_build_store_appends_across_chunks(tmp_path):
+    """Same-year rows arriving in separate chunks must append, not overwrite."""
+    df = pd.DataFrame({
+        "Date": [f"2007-0{m}-01 10:00:00 UTC" for m in (1, 3, 6, 9)],
+        "Article_title": ["a", "b", "c", "d"],
+        "Stock_symbol": ["GS", "MS", "SPY", "GS"],
+        "Lsa_summary": ["s1", "s2", "s3", "s4"],
+        "Publisher": ["P"] * 4,
+        "Url": ["u"] * 4,
+    })
+    p = tmp_path / "raw.csv"
+    df.to_csv(p, index=False)
+    out = tmp_path / "store"
+    stats = build_store(p, out, start="2003-01-01", end="2016-12-31", chunksize=1)
+    assert stats["kept"] == 4
+    got = NewsStore(out).query("2007-01-01", "2007-12-31")
+    assert len(got) == 4
+    assert list(got["title"]) == ["a", "b", "c", "d"]
 
 
 def test_query_by_date_range(tmp_path, raw_csv):

@@ -53,32 +53,47 @@ def detect_columns(csv_path) -> dict[str, str]:
 
 
 def build_store(csv_path, out_dir, start="2003-01-01", end="2016-12-31",
-                chunksize: int = 200_000) -> int:
-    """Stream-filter the raw CSV into per-year parquet files. Returns rows kept."""
+                chunksize: int = 200_000) -> dict[str, int]:
+    """Stream-filter the raw CSV into per-year parquet files.
+
+    Returns ingest stats: ``{"read": rows read, "kept": rows kept (date in range),
+    "dropped_bad_date": rows dropped for unparseable dates}``.
+
+    Accepted risk (one-time research ingest): rows whose fields are misaligned by
+    malformed CSV almost always fail the date parse and are counted in
+    ``dropped_bad_date``; ``on_bad_lines="skip"`` handles extra-field rows. A
+    clean vs dirty run is distinguishable via the returned stats.
+    """
     csv_path, out_dir = Path(csv_path), Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     start_ts, end_ts = pd.Timestamp(start), pd.Timestamp(end)
 
     mapping = detect_columns(csv_path)
     writers: dict[int, pq.ParquetWriter] = {}
-    kept = 0
+    read = kept = dropped_bad_date = 0
     try:
-        for chunk in pd.read_csv(csv_path, usecols=list(mapping), chunksize=chunksize,
-                                 dtype=str, on_bad_lines="skip"):
+        for i, chunk in enumerate(
+                pd.read_csv(csv_path, usecols=list(mapping), chunksize=chunksize,
+                            dtype=str, on_bad_lines="skip"), start=1):
+            read += len(chunk)
             chunk = chunk.rename(columns=mapping)
             for c in COLS:
                 if c not in chunk.columns:
                     chunk[c] = ""
             dates = pd.to_datetime(chunk["date"], errors="coerce", utc=True)
             chunk["date"] = dates.dt.tz_localize(None)
+            n_parseable = len(chunk)
             chunk = chunk.dropna(subset=["date"])
+            dropped_bad_date += n_parseable - len(chunk)
             chunk = chunk[(chunk["date"] >= start_ts) & (chunk["date"] <= end_ts)]
+            kept += len(chunk)
+            if i % 25 == 0:
+                print(f"  chunk {i}: {read:,} read, {kept:,} kept", flush=True)
             if chunk.empty:
                 continue
             chunk = chunk[COLS]
             for c in COLS[1:]:
                 chunk[c] = chunk[c].fillna("").astype(str)
-            kept += len(chunk)
             for year, group in chunk.groupby(chunk["date"].dt.year):
                 if year not in writers:
                     writers[year] = pq.ParquetWriter(out_dir / f"year={year}.parquet", SCHEMA)
@@ -87,7 +102,7 @@ def build_store(csv_path, out_dir, start="2003-01-01", end="2016-12-31",
     finally:
         for w in writers.values():
             w.close()
-    return kept
+    return {"read": read, "kept": kept, "dropped_bad_date": dropped_bad_date}
 
 
 class NewsStore:
