@@ -14,7 +14,7 @@ plus a daily-PnL addition to `XSectional/`.
 | Agentic framework scaffolded (prompts, JSON schema, local model, logging) | ✅ | `monitoring/agentic/` |
 | Information-parity guardrails (as-of dating, timestamp filtering) | ✅ | `monitoring/agentic/guardrails.py` |
 
-Tests: **56** in `monitoring/` + **13** new in `XSectional/` (6 daily-backtest,
+Tests: **62** in `monitoring/` + **13** new in `XSectional/` (6 daily-backtest,
 7 PIT-universe) — all passing.
 
 ## Design decisions (agreed)
@@ -158,13 +158,30 @@ for AL and 8.9%→68% (7.7×) for JT — large, detectable signatures in both bo
    unclassified tickers; sector classification uses today's GICS labels for the whole
    history (same simplification as the snapshot baseline); truly dead names without
    yfinance data remain absent (measured in the JT coverage report).
-3. **Local LLM**: swap `OfflineStubModel` for the Week-1 local model via the `OllamaModel`
-   client (or equivalent) — the `LocalModel` interface is ready.
+3. ~~Local LLM~~ **Done — model selected & benchmarked**: `llama3.2:3b` served by Ollama
+   0.31.2 (local, offline). Benchmarked on the 8 event-onset supervisor contexts via
+   `monitoring/benchmark_model.py`: **8/8 schema-valid on the first try, mean 28.5 s /
+   max 57.7 s per call** on CPU (16 tok/s) — adequate for the daily monitoring cadence
+   (results: `monitoring/results/model_benchmark.json` + `model_benchmark_log.jsonl`).
+   Two changes were needed and are themselves findings:
+   - **Prompt `supervisor-v2`**: v1 embedded the raw JSON-Schema in the system prompt;
+     the 3B model echoed the schema wrapper and nested its answer under `"properties"`
+     (0/8 valid). v2 shows a concrete example object instead (first prompt iteration,
+     version-tracked per the Week-4 VRI item).
+   - **Structured outputs**: `OllamaModel` now passes `ASSESSMENT_JSON_SCHEMA` as
+     Ollama's `format`, so decoding is grammar-constrained server-side.
+   Run with the real model: `python run_classical.py --model ollama:llama3.2:3b`
+   (default stays `--model stub` so tests/CI remain deterministic and offline).
+   Hardware note: the RTX 3050 Ti (4 GB) is currently not visible to CUDA (device state
+   error; Ollama's GPU discovery crashes and falls back to CPU) — a driver
+   reinstall/reboot should cut latency ~5-10×; CPU latency is acceptable meanwhile.
 4. **Confirm the 4th event window** (2011 downgrade) and event onset dates with the supervisor.
 
 ## Run it
 ```bash
 cd monitoring && pip install -r requirements.txt
-python -m pytest -q          # 56 tests
-python run_classical.py      # end-to-end; writes results/classical_summary.json + agent_log.jsonl
+python -m pytest -q          # 62 tests
+python run_classical.py      # end-to-end (offline stub); writes results/classical_summary.json + agent_log.jsonl
+python run_classical.py --model ollama:llama3.2:3b   # same, with the real local LLM (needs `ollama serve`)
+python benchmark_model.py --models ollama:llama3.2:3b stub   # local-model latency/validity benchmark
 ```

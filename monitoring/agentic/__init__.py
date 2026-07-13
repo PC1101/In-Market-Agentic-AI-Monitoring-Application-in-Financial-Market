@@ -11,7 +11,7 @@ Provides the pieces the Week-3 agents are built on:
 
 from .schemas import AgentAssessment, ASSESSMENT_JSON_SCHEMA, State, Action, validate_assessment
 from .guardrails import as_of_context, assert_no_lookahead, filter_news_by_timestamp
-from .model import LocalModel, OfflineStubModel
+from .model import LocalModel, OfflineStubModel, OllamaModel, make_model
 from .logging_utils import RunLogger
 from .runner import run_supervisor
 
@@ -26,6 +26,8 @@ __all__ = [
     "filter_news_by_timestamp",
     "LocalModel",
     "OfflineStubModel",
+    "OllamaModel",
+    "make_model",
     "RunLogger",
     "run_supervisor",
 ]

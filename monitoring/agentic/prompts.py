@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import json
 
-from .schemas import ASSESSMENT_JSON_SCHEMA, State, Action
+from .schemas import State, Action
 
-SUPERVISOR_PROMPT_VERSION = "supervisor-v1"
+# v2: raw JSON-Schema dump replaced by a concrete example — small local models
+# (llama3.2:3b) echoed the schema wrapper and nested the assessment under "properties".
+SUPERVISOR_PROMPT_VERSION = "supervisor-v2"
 
 SUPERVISOR_SYSTEM = f"""\
 You are a Performance Supervisor monitoring a systematic trading strategy. Each day you
@@ -24,14 +26,22 @@ You may ONLY use the information provided in the user message. It reflects what 
 as of the stated decision date. Do not speculate about future events or use knowledge of
 what happened after the decision date.
 
-Respond with a SINGLE JSON object and nothing else. It must conform to this schema:
+Respond with a SINGLE flat JSON object and nothing else — no schema, no wrapper, no
+markdown. It must have exactly these fields, like this example:
 
-{json.dumps(ASSESSMENT_JSON_SCHEMA, indent=2)}
+{{
+  "state": "WATCH",
+  "action": "INVESTIGATE",
+  "root_cause": "One or two sentences naming the most likely driver.",
+  "confidence": 0.7,
+  "as_of": "2008-09-15",
+  "detectors_cited": ["page_hinkley"]
+}}
 
 Field guidance:
-- state: {State.ALL} — escalate as evidence of a break accumulates.
-- action: {Action.ALL} — HOLD when normal; REDUCE/HALT as risk rises; INVESTIGATE when
-  signals are ambiguous.
+- state: one of {State.ALL} — escalate as evidence of a break accumulates.
+- action: one of {Action.ALL} — HOLD when normal; REDUCE/HALT as risk rises; INVESTIGATE
+  when signals are ambiguous.
 - root_cause: one or two sentences naming the most likely driver.
 - confidence: your calibrated confidence in this assessment, 0..1.
 - as_of: echo the decision date exactly.

@@ -15,6 +15,7 @@ has not been generated yet this script reports JT as data-pending rather than fa
 
 from __future__ import annotations
 
+import argparse
 import json
 from dataclasses import asdict
 from pathlib import Path
@@ -25,7 +26,7 @@ from pnl_loader import load_pnl, returns_series
 from windows import ALL_WINDOWS, EVENT_WINDOWS
 from detectors import PageHinkley, BOCPD, HMMDetector, DistributionalThreshold, aggregate_alarms
 from metrics import evaluate_window, aggregate_metrics, WindowMetrics
-from agentic import as_of_context, OfflineStubModel, RunLogger, run_supervisor
+from agentic import as_of_context, LocalModel, RunLogger, run_supervisor, make_model
 
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS = Path(__file__).resolve().parent / "results"
@@ -70,7 +71,8 @@ def _n_trading_days(series: pd.Series, window) -> int:
     return int(mask.sum())
 
 
-def run_strategy(name: str, curve_paths, agent_logger: RunLogger | None):
+def run_strategy(name: str, curve_paths, agent_logger: RunLogger | None,
+                 agent_model: LocalModel | None = None):
     """Run all detectors on a strategy's curves and score every covered window."""
     # detector name -> list[WindowMetrics] across all windows
     per_detector: dict[str, list[WindowMetrics]] = {}
@@ -98,6 +100,7 @@ def run_strategy(name: str, curve_paths, agent_logger: RunLogger | None):
 
         # Agentic scaffold demonstration: assess at each event onset in this curve.
         if agent_logger is not None:
+            model = agent_model if agent_model is not None else make_model("stub")
             for w in windows:
                 if w.kind != "event":
                     continue
@@ -109,7 +112,7 @@ def run_strategy(name: str, curve_paths, agent_logger: RunLogger | None):
                         continue
                     onset = later[0]
                 ctx = as_of_context(series, onset, alarms_by_det)
-                run_supervisor(ctx, OfflineStubModel(), logger=agent_logger,
+                run_supervisor(ctx, model, logger=agent_logger,
                                extra_label=f"{name}:{w.name}")
 
     headline = {det: aggregate_metrics(wms) for det, wms in per_detector.items()}
@@ -121,6 +124,13 @@ def _fmt(x, nd=3):
 
 
 def main():
+    ap = argparse.ArgumentParser(description="Classical monitoring + agentic pass.")
+    ap.add_argument("--model", default="stub",
+                    help="agent model spec: 'stub' (default, deterministic/CI-safe) "
+                         "or 'ollama:<name>' e.g. 'ollama:llama3.2:3b'")
+    args = ap.parse_args()
+    agent_model = make_model(args.model)
+
     RESULTS.mkdir(parents=True, exist_ok=True)
     agent_logger = RunLogger(RESULTS / "agent_log.jsonl")
     # start each run with a fresh agent log
@@ -139,7 +149,8 @@ def main():
             summary[strat] = {"status": "data_pending", "missing": missing}
             continue
 
-        headline, per_detector, covered = run_strategy(strat, paths, agent_logger)
+        headline, per_detector, covered = run_strategy(strat, paths, agent_logger,
+                                                       agent_model=agent_model)
 
         print(f"\n### {strat} — windows covered: {sorted(covered)}")
         for p in paths:

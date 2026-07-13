@@ -124,14 +124,22 @@ def _grab_json_after(text: str, marker: str) -> dict:
 
 
 class OllamaModel(LocalModel):
-    """Thin client for a locally-served Ollama model. Import-safe; lazy network use."""
+    """Thin client for a locally-served Ollama model. Import-safe; lazy network use.
+
+    If ``json_schema`` is given it is passed as Ollama's ``format`` (structured
+    outputs): decoding is grammar-constrained server-side, so the response is
+    guaranteed to have the schema's shape. Small models otherwise tend to echo the
+    schema wrapper instead of filling it in.
+    """
 
     def __init__(self, model: str = "llama3.1", host: str = "http://localhost:11434",
-                 temperature: float = 0.0, timeout: float = 120.0):
+                 temperature: float = 0.0, timeout: float = 300.0,
+                 json_schema: dict | None = None):
         self.model = model
         self.host = host.rstrip("/")
         self.temperature = temperature
         self.timeout = timeout
+        self.json_schema = json_schema
         self.name = f"ollama:{model}"
 
     def complete(self, system: str, user: str) -> dict:
@@ -141,7 +149,7 @@ class OllamaModel(LocalModel):
             "model": self.model,
             "prompt": f"{system}\n\n{user}",
             "stream": False,
-            "format": "json",
+            "format": self.json_schema if self.json_schema is not None else "json",
             "options": {"temperature": self.temperature},
         }
         req = urllib.request.Request(
@@ -152,3 +160,21 @@ class OllamaModel(LocalModel):
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
             body = json.loads(resp.read().decode())
         return self._extract_json(body.get("response", ""))
+
+
+def make_model(spec: str) -> LocalModel:
+    """Build a LocalModel from a CLI spec: ``stub`` or ``ollama:<model-name>``.
+
+    ``ollama:`` specs keep everything after the first colon as the model name, so
+    tags work naturally (e.g. ``ollama:llama3.2:3b``). Ollama models are constrained
+    to the supervisor assessment schema via structured outputs.
+    """
+    if spec == "stub":
+        return OfflineStubModel()
+    if spec.startswith("ollama:"):
+        name = spec.split(":", 1)[1]
+        if not name:
+            raise ValueError("empty ollama model name; expected e.g. 'ollama:llama3.2:3b'")
+        from .schemas import ASSESSMENT_JSON_SCHEMA
+        return OllamaModel(model=name, json_schema=ASSESSMENT_JSON_SCHEMA)
+    raise ValueError(f"unknown model spec {spec!r}; expected 'stub' or 'ollama:<name>'")
