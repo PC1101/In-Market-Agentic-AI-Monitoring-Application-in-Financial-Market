@@ -18,6 +18,7 @@ Both return a parsed dict; ``runner.run_supervisor`` validates it against the sc
 from __future__ import annotations
 
 import json
+import os
 import re
 from abc import ABC, abstractmethod
 
@@ -53,6 +54,23 @@ class OfflineStubModel(LocalModel):
     name = "offline-stub"
 
     def complete(self, system: str, user: str) -> dict:
+        if "News Context Agent" in system:
+            n_articles = user.count("\n- [")
+            risky = any(t in user.lower() for t in ("meltdown", "crash", "liquidat", "crisis"))
+            risk = "HIGH" if (risky and n_articles >= 3) else ("ELEVATED" if risky else "LOW")
+            m = re.search(r"as_of\):\s*([0-9-]+)", user)
+            return {
+                "overall_risk": risk,
+                "risk_flags": (
+                    [{"flag": "stress_language_in_news", "evidence": "risk terms present in headlines"}]
+                    if risky else []
+                ),
+                "narrative": f"Reviewed {n_articles} filtered articles; "
+                             + ("stress language present." if risky else "no stress language."),
+                "confidence": 0.5,
+                "as_of": m.group(1) if m else "",
+                "n_articles": n_articles,
+            }
         ctx = self._parse_user(user)
         tel = ctx.get("telemetry", {})
         alarms = ctx.get("detector_alarms", {})
@@ -126,7 +144,7 @@ def _grab_json_after(text: str, marker: str) -> dict:
 class OllamaModel(LocalModel):
     """Thin client for a locally-served Ollama model. Import-safe; lazy network use."""
 
-    def __init__(self, model: str = "llama3.1", host: str = "http://localhost:11434",
+    def __init__(self, model: str = "qwen2.5:3b", host: str = "http://localhost:11434",
                  temperature: float = 0.0, timeout: float = 120.0):
         self.model = model
         self.host = host.rstrip("/")
@@ -152,3 +170,20 @@ class OllamaModel(LocalModel):
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
             body = json.loads(resp.read().decode())
         return self._extract_json(body.get("response", ""))
+
+
+def default_model(spec: str | None = None) -> LocalModel:
+    """Build a LocalModel from a spec string.
+
+    Specs: "stub" | "ollama" (qwen2.5:3b) | "ollama:<model-name>".
+    Falls back to the MONITOR_MODEL env var, then to the offline stub, so tests
+    and CI never require a running Ollama server.
+    """
+    spec = spec or os.environ.get("MONITOR_MODEL", "stub")
+    if spec in ("stub", "offline"):
+        return OfflineStubModel()
+    if spec == "ollama":
+        return OllamaModel()
+    if spec.startswith("ollama:"):
+        return OllamaModel(model=spec.split(":", 1)[1])
+    raise ValueError(f"unknown model spec {spec!r}; use 'stub', 'ollama', or 'ollama:<name>'")
