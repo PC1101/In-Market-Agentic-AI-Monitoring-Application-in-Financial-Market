@@ -65,7 +65,9 @@ class OfflineStubModel(LocalModel):
     name = "offline-stub"
 
     def complete(self, system: str, user: str) -> dict:
-        if "News Context Agent" in system:
+        # Dispatch on the role declaration, not a bare substring: the supervisor-v2
+        # system prompt also *mentions* the News Context Agent.
+        if "You are a News Context Agent" in system:
             return self._complete_news(user)
         ctx = self._parse_user(user)
         tel = ctx.get("telemetry", {})

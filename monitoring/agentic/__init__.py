@@ -17,6 +17,7 @@ from .guardrails import (
     as_of_context, assert_no_lookahead, filter_news_by_timestamp, scrub_future_dated,
 )
 from .model import LocalModel, OfflineStubModel, default_model
+from .prompts import build_supervisor_prompt_v2, SUPERVISOR_PROMPT_VERSION_V2
 from .logging_utils import RunLogger
 from .runner import run_supervisor
 from .news_agent import run_news_agent
@@ -37,6 +38,8 @@ __all__ = [
     "LocalModel",
     "OfflineStubModel",
     "default_model",
+    "build_supervisor_prompt_v2",
+    "SUPERVISOR_PROMPT_VERSION_V2",
     "RunLogger",
     "run_supervisor",
     "run_news_agent",

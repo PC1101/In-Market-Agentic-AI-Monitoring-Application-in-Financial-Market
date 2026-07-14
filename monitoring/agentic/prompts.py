@@ -58,6 +58,36 @@ def build_supervisor_prompt(context: dict) -> tuple[str, str]:
     return SUPERVISOR_SYSTEM, user
 
 
+SUPERVISOR_PROMPT_VERSION_V2 = "supervisor-v2"
+
+SUPERVISOR_SYSTEM_V2 = SUPERVISOR_SYSTEM + """
+You may additionally receive:
+- A macro-market block (VIX, Treasury yields, fed funds, TED spread, and the latest
+  macro releases AS THEY WERE KNOWN on the decision date).
+- A structured summary from a News Context Agent that has read the filtered financial
+  news published up to the decision date.
+Weigh telemetry and classical detectors first; use news/macro context to confirm,
+explain (root_cause), or discount them. Cite detectors in detectors_cited as before.
+"""
+
+
+def build_supervisor_prompt_v2(context: dict) -> tuple[str, str]:
+    """v2: telemetry + detector alarms + optional macro block + optional news summary."""
+    parts = [
+        f"Decision date (as_of): {context['as_of']}",
+        f"Strategy telemetry:\n{json.dumps(context['telemetry'], indent=2)}",
+        f"Classical detector alarms visible so far:\n"
+        f"{json.dumps(context['detector_alarms'], indent=2)}",
+    ]
+    if context.get("macro"):
+        parts.append(f"Macro/market context (as known on the decision date):\n"
+                     f"{json.dumps(context['macro'], indent=2)}")
+    if context.get("news"):
+        parts.append(f"News Context Agent summary:\n{json.dumps(context['news'], indent=2)}")
+    parts.append("Return your JSON assessment now.")
+    return SUPERVISOR_SYSTEM_V2, "\n\n".join(parts)
+
+
 NEWS_PROMPT_VERSION = "news-context-v1"
 
 NEWS_SYSTEM = f"""\
