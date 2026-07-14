@@ -163,7 +163,9 @@ class OllamaModel(LocalModel):
     """Thin client for a locally-served Ollama model. Import-safe; lazy network use."""
 
     def __init__(self, model: str = "qwen2.5:3b", host: str = "http://localhost:11434",
-                 temperature: float = 0.0, timeout: float = 120.0):
+                 temperature: float = 0.0, timeout: float = 600.0):
+        # 600 s: CPU inference on a 3B model with ~4k-token news prompts routinely
+        # exceeds the old 120 s, especially on the first call (model load).
         self.model = model
         self.host = host.rstrip("/")
         self.temperature = temperature
