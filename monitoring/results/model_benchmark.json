@@ -4,9 +4,9 @@
     "n_contexts": 8,
     "n_valid": 8,
     "n_first_try_valid": 8,
-    "mean_call_latency_s": 28.506,
-    "median_call_latency_s": 29.216,
-    "max_call_latency_s": 57.683,
+    "mean_call_latency_s": 5.239,
+    "median_call_latency_s": 5.178,
+    "max_call_latency_s": 6.162,
     "states": [
       "WATCH"
     ],
@@ -19,9 +19,9 @@
         "needed_repair": false,
         "n_model_calls": 1,
         "call_latencies_s": [
-          10.319
+          4.747
         ],
-        "total_s": 10.319,
+        "total_s": 4.748,
         "state": "WATCH",
         "action": "INVESTIGATE",
         "error": null
@@ -34,9 +34,9 @@
         "needed_repair": false,
         "n_model_calls": 1,
         "call_latencies_s": [
-          16.717
+          4.538
         ],
-        "total_s": 16.717,
+        "total_s": 4.538,
         "state": "WATCH",
         "action": "INVESTIGATE",
         "error": null
@@ -49,9 +49,9 @@
         "needed_repair": false,
         "n_model_calls": 1,
         "call_latencies_s": [
-          18.206
+          5.263
         ],
-        "total_s": 18.206,
+        "total_s": 5.264,
         "state": "WATCH",
         "action": "INVESTIGATE",
         "error": null
@@ -64,9 +64,9 @@
         "needed_repair": false,
         "n_model_calls": 1,
         "call_latencies_s": [
-          27.156
+          5.271
         ],
-        "total_s": 27.157,
+        "total_s": 5.272,
         "state": "WATCH",
         "action": "INVESTIGATE",
         "error": null
@@ -79,9 +79,9 @@
         "needed_repair": false,
         "n_model_calls": 1,
         "call_latencies_s": [
-          57.683
+          5.092
         ],
-        "total_s": 57.683,
+        "total_s": 5.093,
         "state": "WATCH",
         "action": "INVESTIGATE",
         "error": null
@@ -94,9 +94,9 @@
         "needed_repair": false,
         "n_model_calls": 1,
         "call_latencies_s": [
-          33.206
+          6.162
         ],
-        "total_s": 33.207,
+        "total_s": 6.163,
         "state": "WATCH",
         "action": "INVESTIGATE",
         "error": null
@@ -109,9 +109,9 @@
         "needed_repair": false,
         "n_model_calls": 1,
         "call_latencies_s": [
-          33.483
+          5.067
         ],
-        "total_s": 33.484,
+        "total_s": 5.068,
         "state": "WATCH",
         "action": "INVESTIGATE",
         "error": null
@@ -124,145 +124,11 @@
         "needed_repair": false,
         "n_model_calls": 1,
         "call_latencies_s": [
-          31.276
+          5.772
         ],
-        "total_s": 31.277,
+        "total_s": 5.772,
         "state": "WATCH",
         "action": "INVESTIGATE",
-        "error": null
-      }
-    ]
-  },
-  {
-    "model": "offline-stub",
-    "n_contexts": 8,
-    "n_valid": 8,
-    "n_first_try_valid": 8,
-    "mean_call_latency_s": 0.0,
-    "median_call_latency_s": 0.0,
-    "max_call_latency_s": 0.0,
-    "states": [
-      "CRITICAL"
-    ],
-    "rows": [
-      {
-        "model": "offline-stub",
-        "label": "AL_PCA:quant_meltdown_2007",
-        "as_of": "2007-08-06",
-        "valid": true,
-        "needed_repair": false,
-        "n_model_calls": 1,
-        "call_latencies_s": [
-          0.0
-        ],
-        "total_s": 0.001,
-        "state": "CRITICAL",
-        "action": "HALT",
-        "error": null
-      },
-      {
-        "model": "offline-stub",
-        "label": "AL_PCA:gfc_lehman_2008",
-        "as_of": "2008-09-15",
-        "valid": true,
-        "needed_repair": false,
-        "n_model_calls": 1,
-        "call_latencies_s": [
-          0.0
-        ],
-        "total_s": 0.0,
-        "state": "CRITICAL",
-        "action": "HALT",
-        "error": null
-      },
-      {
-        "model": "offline-stub",
-        "label": "AL_PCA:momentum_crash_2009",
-        "as_of": "2009-03-09",
-        "valid": true,
-        "needed_repair": false,
-        "n_model_calls": 1,
-        "call_latencies_s": [
-          0.0
-        ],
-        "total_s": 0.0,
-        "state": "CRITICAL",
-        "action": "HALT",
-        "error": null
-      },
-      {
-        "model": "offline-stub",
-        "label": "AL_PCA:downgrade_2011",
-        "as_of": "2011-08-05",
-        "valid": true,
-        "needed_repair": false,
-        "n_model_calls": 1,
-        "call_latencies_s": [
-          0.0
-        ],
-        "total_s": 0.001,
-        "state": "CRITICAL",
-        "action": "HALT",
-        "error": null
-      },
-      {
-        "model": "offline-stub",
-        "label": "JT_MOM:quant_meltdown_2007",
-        "as_of": "2007-08-06",
-        "valid": true,
-        "needed_repair": false,
-        "n_model_calls": 1,
-        "call_latencies_s": [
-          0.0
-        ],
-        "total_s": 0.001,
-        "state": "CRITICAL",
-        "action": "HALT",
-        "error": null
-      },
-      {
-        "model": "offline-stub",
-        "label": "JT_MOM:gfc_lehman_2008",
-        "as_of": "2008-09-15",
-        "valid": true,
-        "needed_repair": false,
-        "n_model_calls": 1,
-        "call_latencies_s": [
-          0.0
-        ],
-        "total_s": 0.001,
-        "state": "CRITICAL",
-        "action": "HALT",
-        "error": null
-      },
-      {
-        "model": "offline-stub",
-        "label": "JT_MOM:momentum_crash_2009",
-        "as_of": "2009-03-09",
-        "valid": true,
-        "needed_repair": false,
-        "n_model_calls": 1,
-        "call_latencies_s": [
-          0.0
-        ],
-        "total_s": 0.001,
-        "state": "CRITICAL",
-        "action": "HALT",
-        "error": null
-      },
-      {
-        "model": "offline-stub",
-        "label": "JT_MOM:downgrade_2011",
-        "as_of": "2011-08-05",
-        "valid": true,
-        "needed_repair": false,
-        "n_model_calls": 1,
-        "call_latencies_s": [
-          0.0
-        ],
-        "total_s": 0.001,
-        "state": "CRITICAL",
-        "action": "HALT",
         "error": null
       }
     ]

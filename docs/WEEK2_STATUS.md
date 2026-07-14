@@ -172,9 +172,10 @@ for AL and 8.9%→68% (7.7×) for JT — large, detectable signatures in both bo
      Ollama's `format`, so decoding is grammar-constrained server-side.
    Run with the real model: `python run_classical.py --model ollama:llama3.2:3b`
    (default stays `--model stub` so tests/CI remain deterministic and offline).
-   Hardware note: the RTX 3050 Ti (4 GB) is currently not visible to CUDA (device state
-   error; Ollama's GPU discovery crashes and falls back to CPU) — a driver
-   reinstall/reboot should cut latency ~5-10×; CPU latency is acceptable meanwhile.
+   Hardware note: on the RTX 3050 Ti (4 GB, 80% GPU / 20% CPU offload, 57 tok/s) the
+   benchmark improves to **mean 5.2 s / max 6.2 s per call** (5.4× vs CPU-only). The
+   dGPU disappears from the PCIe bus if the laptop's Eco/iGPU-only mode is enabled —
+   if `ollama ps` reports `100% CPU`, re-enable the dGPU and restart Ollama.
 4. **Confirm the 4th event window** (2011 downgrade) and event onset dates with the supervisor.
 
 ## Run it
