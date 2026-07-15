@@ -23,6 +23,8 @@ Stat Arb/statsArb-dev/data/news/*.parquet
 # Monitoring news caches (rebuilt by monitoring/scripts/fetch_nyt_archive.py + build_news_cache.py)
 monitoring/news/data/
 
-# Python bytecode
-__pycache__/
-*.pyc
+.gstack/
+
+# Data payloads (FNSPID store + macro vintages; rebuilt by news/download_fnspid.py + macro/fetch_macro.py)
+data/fnspid/
+data/macro/

@@ -10,23 +10,25 @@
   (`--survivorship` reproduces the biased curve for comparison).
 - AL PCA backtests: `python "Stat Arb/statsArb-dev/run_full_universe.py" --pit --tag <name>`
   (PIT sleeves built by `scripts/build_pit_sleeves.py`). Runs take ~30-45 min.
-- Current status doc: `docs/WEEK2_STATUS.md`.
+- Daily agentic run (one window): `python monitoring/run_agentic.py --window
+  quant_meltdown_2007 --strategy AL_PCA --model ollama:llama3.2:3b --news-device cuda`
+  (use `--model stub --news-scorer fake` for offline).
+- News caches: `python monitoring/scripts/fetch_nyt_archive.py` (needs `NYT_API_KEY`)
+  then `python monitoring/scripts/build_news_cache.py` (NYT + FNSPID parquets).
+- Macro fetch: `FRED_API_KEY=<key> python monitoring/macro/fetch_macro.py`
+  (macro cached but not yet wired into the supervisor prompt — Week-4 decision).
+- Current status doc: `docs/WEEK3_STATUS.md`.
 
 ## Project deliverables & schedule
 This project is governed by a weekly deliverables plan (the "VRI" document).
 **Always read `docs/VRI.md` at the start of any work on this project** — it defines
 the Week 1–6 to-dos, deliverables, and the 2×2 experimental design.
 
-**Current status: Week 2 — Classical monitoring + agentic structure.**
+**Current status: Week 3 — News pipeline + agent build.** See `docs/WEEK3_STATUS.md`.
 
-Week 2 open work:
-- Implement + unit-test 4 detectors: Page-Hinkley, BOCPD, HMM, distributional threshold
-- Aggregation rule: >=2 detectors firing within 5 days
-- Run classical monitoring end-to-end: both strategies x all 6 windows (4 event, 2 calm)
-- Metrics per-detector + aggregated: detection latency, false-positive rate, precision, recall
-- Scaffold agentic framework: prompt templates, structured-JSON schema
-  (state / action / root-cause / confidence), local-model integration, logging
-- Information-parity guardrails: as-of dating + timestamp filtering (no lookahead)
+Week 3 open work (carried into Week 4):
+- Prompt iteration under version tags; two-pass with/without-events training control;
+  all-6-windows × both-strategies agentic run.
 
 ## Methodological spine (non-negotiable)
 Avoid lookahead / hindsight bias everywhere: point-in-time universe, as-of dating,

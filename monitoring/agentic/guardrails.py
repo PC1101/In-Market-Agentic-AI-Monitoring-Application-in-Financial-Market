@@ -136,3 +136,23 @@ def filter_news_by_timestamp(records, as_of, ts_field: str = "timestamp") -> lis
         if ts is not None and ts <= as_of:
             kept.append(r)
     return kept
+
+
+def scrub_future_dated(records, as_of, text_fields=("title", "summary")) -> list:
+    """Drop records whose TEXT mentions a date after ``as_of`` (Week-3 news pipeline).
+
+    ``filter_news_by_timestamp`` handles the publication timestamp; this handles the
+    subtler leak of an on-time article whose body references a future scheduled date
+    (fail-closed: the whole record is dropped, mirroring assert_no_lookahead's scan).
+    """
+    as_of = pd.Timestamp(as_of)
+    kept = []
+    for r in records:
+        text = " ".join(str(r.get(f, "")) for f in text_fields)
+        future = any(
+            (ts := _try_date(m)) is not None and ts > as_of
+            for m in _ISO_DATE_RE.findall(text)
+        )
+        if not future:
+            kept.append(r)
+    return kept

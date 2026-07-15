@@ -160,6 +160,31 @@ Week-4 work.
    dense 2011/2013 windows; both cached, mix is a config flag.
 5. Macro data (ALFRED/FRED) remains descoped; revisit if Week-4/5 analysis needs it.
 
+## Merge note — `week3-news-agents` branch integrated (2026-07-15)
+
+A teammate's parallel Week-3 implementation (`origin/week3-news-agents`, documented in
+`docs/ARCHITECTURE.md`/`.pdf`) was merged into this branch. Resolution policy:
+
+- **Taken from their branch**: `monitoring/macro/` (FRED/ALFRED point-in-time vintages +
+  as-of guards + tests) — cached and tested but **not yet wired into the supervisor
+  prompt** (Week-4 decision; keeps tonight's E2E results valid); `news/store.py`
+  (per-year FNSPID parquet store, 11.8M articles), `news/filter.py`, `news/coverage.py`,
+  `news/download_fnspid.py` + their standalone tests; `guardrails.scrub_future_dated`;
+  `run_supervisor(prompt_builder=, prompt_version=)` extension points;
+  `docs/ARCHITECTURE.*`.
+- **Ported**: their `run_agentic.py` daily loop was re-based onto this branch's stack —
+  it now reuses `run_classical`'s `_news_for_date`/`_frame_slice` plumbing (NYT+FNSPID
+  caches, FinBERT signal, `TriageMode`, supervisor-v3, llama3.2:3b) so both entry points
+  share one triage/guardrail implementation. `tests/test_run_agentic.py` rewritten
+  against the ported loop (offline fixture + FakeScorer + stub).
+- **Superseded/dropped**: their `agentic/news_agent.py`, `test_news_schema.py`,
+  `test_supervisor_v2.py` (this branch's news agent, schema, and supervisor-v3 subsume
+  them); colliding `agentic/` + `news/` files resolved to this branch's versions.
+- **Finding kept for the write-up**: their `news_coverage.csv` gate passes
+  `calm_2004_2006` on volume (91,065 articles) yet finds `n_risk_articles=1` — pre-2009
+  FNSPID is the Russian Lenta.ru scrape, so a volume-based coverage gate is blind to
+  unusable content. The NYT Archive supplement (above) is the fix.
+
 ## Run it
 ```bash
 cd monitoring
