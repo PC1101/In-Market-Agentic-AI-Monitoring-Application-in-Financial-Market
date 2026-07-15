@@ -9,11 +9,15 @@ Provides the pieces the Week-3 agents are built on:
   * ``runner``    — glue that turns a context into a validated assessment.
 """
 
-from .schemas import AgentAssessment, ASSESSMENT_JSON_SCHEMA, State, Action, validate_assessment
+from .schemas import (
+    AgentAssessment, ASSESSMENT_JSON_SCHEMA, State, Action, validate_assessment,
+    NewsContextSummary, NEWS_CONTEXT_JSON_SCHEMA, RiskFlag, NewsIntensity,
+    validate_news_context, SchemaError,
+)
 from .guardrails import as_of_context, assert_no_lookahead, filter_news_by_timestamp
 from .model import LocalModel, OfflineStubModel, OllamaModel, make_model
 from .logging_utils import RunLogger
-from .runner import run_supervisor
+from .runner import run_supervisor, run_news_agent
 
 __all__ = [
     "AgentAssessment",
@@ -21,6 +25,12 @@ __all__ = [
     "State",
     "Action",
     "validate_assessment",
+    "NewsContextSummary",
+    "NEWS_CONTEXT_JSON_SCHEMA",
+    "RiskFlag",
+    "NewsIntensity",
+    "validate_news_context",
+    "SchemaError",
     "as_of_context",
     "assert_no_lookahead",
     "filter_news_by_timestamp",
@@ -30,4 +40,5 @@ __all__ = [
     "make_model",
     "RunLogger",
     "run_supervisor",
+    "run_news_agent",
 ]

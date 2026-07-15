@@ -1,0 +1,51 @@
+{
+  "AL_PCA": {
+    "quant_meltdown_2007": {
+      "CHEAP_MODEL": 39,
+      "THINKING_MODEL": 5
+    },
+    "gfc_lehman_2008": {
+      "CHEAP_MODEL": 74
+    },
+    "momentum_crash_2009": {
+      "CHEAP_MODEL": 72
+    },
+    "downgrade_2011": {
+      "CHEAP_MODEL": 59,
+      "THINKING_MODEL": 5
+    },
+    "calm_2013_2014": {
+      "CHEAP_MODEL": 504
+    },
+    "calm_2004_2006": {
+      "SKIP": 561,
+      "CLASSICAL_ESCALATION": 117,
+      "CHEAP_MODEL": 76
+    }
+  },
+  "JT_MOM": {
+    "quant_meltdown_2007": {
+      "CHEAP_MODEL": 44
+    },
+    "gfc_lehman_2008": {
+      "CHEAP_MODEL": 74
+    },
+    "momentum_crash_2009": {
+      "CHEAP_MODEL": 71,
+      "THINKING_MODEL": 1
+    },
+    "downgrade_2011": {
+      "CHEAP_MODEL": 59,
+      "THINKING_MODEL": 5
+    },
+    "calm_2004_2006": {
+      "SKIP": 621,
+      "CHEAP_MODEL": 67,
+      "CLASSICAL_ESCALATION": 67
+    },
+    "calm_2013_2014": {
+      "CHEAP_MODEL": 499,
+      "THINKING_MODEL": 5
+    }
+  }
+}

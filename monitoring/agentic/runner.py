@@ -7,8 +7,14 @@ retry) → log. Information parity is enforced upstream by ``guardrails.as_of_co
 
 from __future__ import annotations
 
-from .prompts import build_supervisor_prompt, SUPERVISOR_PROMPT_VERSION
-from .schemas import validate_assessment, AgentAssessment, SchemaError
+from .prompts import (
+    build_supervisor_prompt, SUPERVISOR_PROMPT_VERSION,
+    build_news_prompt, NEWS_PROMPT_VERSION, NEWS_PROMPT_VERSION_THINKING,
+)
+from .schemas import (
+    validate_assessment, AgentAssessment, SchemaError,
+    validate_news_context, NewsContextSummary,
+)
 from .model import LocalModel
 from .guardrails import assert_no_lookahead
 
@@ -61,3 +67,59 @@ def run_supervisor(context: dict, model: LocalModel, logger=None,
             extra=extra,
         )
     return assessment
+
+
+def run_news_agent(news_block: dict, model: LocalModel, logger=None,
+                   latency_s: float | None = None,
+                   prompt_variant: str = "standard",
+                   extra_label: str | None = None) -> NewsContextSummary:
+    """Run the News Context Agent on one causal news block.
+
+    Args:
+        news_block: causal block from ``news.pipeline.build_news_block`` (already
+                    T-1-cut and lookahead-checked at construction).
+        model:      a LocalModel implementation.
+        logger:     optional RunLogger to record the invocation.
+        latency_s:  optional measured latency to record.
+        prompt_variant: "standard" (CHEAP_MODEL) or "thinking" (THINKING_MODEL).
+
+    Returns:
+        A validated NewsContextSummary.
+
+    Raises:
+        SchemaError: if the model output cannot be validated after one repair
+                     attempt. Callers map this (and transport errors) to the
+                     CLASSICAL_ESCALATION triage mode.
+    """
+    # Defensive re-check: never send future-dated news to the model.
+    assert_no_lookahead(news_block, news_block["as_of"])
+
+    system, user = build_news_prompt(news_block, variant=prompt_variant)
+    version = (NEWS_PROMPT_VERSION_THINKING if prompt_variant == "thinking"
+               else NEWS_PROMPT_VERSION)
+
+    raw = model.complete(system, user)
+    error = None
+    try:
+        summary = validate_news_context(raw)
+    except SchemaError as e:
+        error = str(e)
+        repair_user = user + f"\n\nYour previous output was invalid: {e}\nReturn corrected JSON."
+        raw = model.complete(system, repair_user)
+        summary = validate_news_context(raw)  # propagate if still invalid
+
+    if logger is not None:
+        extra = {"model": model.name, "triage_mode": news_block.get("triage_mode")}
+        if extra_label is not None:
+            extra["label"] = extra_label
+        logger.log_invocation(
+            agent="news_context",
+            prompt_version=version,
+            as_of=news_block["as_of"],
+            raw_output=raw,
+            assessment=summary.to_dict(),
+            error=error,
+            latency_s=latency_s,
+            extra=extra,
+        )
+    return summary

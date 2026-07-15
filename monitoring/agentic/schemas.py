@@ -118,3 +118,129 @@ def validate_assessment(obj: dict) -> AgentAssessment:
         as_of=obj["as_of"],
         detectors_cited=list(cited),
     )
+
+
+# --------------------------------------------------------------------------- #
+# News Context Agent (Week 3)                                                  #
+# --------------------------------------------------------------------------- #
+
+class RiskFlag:
+    """Structured risk-flag vocabulary for the News Context Agent.
+
+    Kept flat + enum-only so the 3B model can be grammar-constrained to it via
+    Ollama structured outputs. NONE is exclusive: it may not appear alongside
+    any other flag (validated below).
+    """
+
+    LIQUIDITY_STRESS = "LIQUIDITY_STRESS"
+    CREDIT_EVENT = "CREDIT_EVENT"
+    MARKET_SELLOFF = "MARKET_SELLOFF"
+    FUND_STRESS = "FUND_STRESS"
+    POLICY_INTERVENTION = "POLICY_INTERVENTION"
+    RATING_ACTION = "RATING_ACTION"
+    MACRO_DETERIORATION = "MACRO_DETERIORATION"
+    NONE = "NONE"
+    ALL = (LIQUIDITY_STRESS, CREDIT_EVENT, MARKET_SELLOFF, FUND_STRESS,
+           POLICY_INTERVENTION, RATING_ACTION, MACRO_DETERIORATION, NONE)
+
+
+class NewsIntensity:
+    LOW = "LOW"
+    ELEVATED = "ELEVATED"
+    HIGH = "HIGH"
+    ALL = (LOW, ELEVATED, HIGH)
+
+
+#: Contract for the News Context Agent — flat and enum-heavy for the 3B model.
+NEWS_CONTEXT_JSON_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["as_of", "risk_flags", "narrative", "news_intensity", "confidence"],
+    "properties": {
+        "as_of": {"type": "string", "description": "ISO 8601 date (YYYY-MM-DD)"},
+        "risk_flags": {
+            "type": "array",
+            "items": {"type": "string", "enum": list(RiskFlag.ALL)},
+        },
+        "narrative": {"type": "string", "minLength": 1, "maxLength": 600},
+        "news_intensity": {"type": "string", "enum": list(NewsIntensity.ALL)},
+        "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "headlines_cited": {"type": "array", "items": {"type": "string"}},
+    },
+}
+
+
+@dataclass
+class NewsContextSummary:
+    """A validated News Context Agent output."""
+
+    as_of: str
+    risk_flags: list[str]
+    narrative: str
+    news_intensity: str
+    confidence: float
+    headlines_cited: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+def validate_news_context(obj: dict) -> NewsContextSummary:
+    """Validate a raw dict against NEWS_CONTEXT_JSON_SCHEMA.
+
+    Raises:
+        SchemaError: on missing/invalid fields, unknown flags, NONE combined
+                     with other flags, over-length narrative, or bad date.
+    """
+    if not isinstance(obj, dict):
+        raise SchemaError(f"news context must be a JSON object, got {type(obj).__name__}")
+
+    required = NEWS_CONTEXT_JSON_SCHEMA["required"]
+    missing = [k for k in required if k not in obj]
+    if missing:
+        raise SchemaError(f"missing required field(s): {missing}")
+
+    try:
+        date.fromisoformat(obj["as_of"])
+    except (ValueError, TypeError):
+        raise SchemaError(f"as_of must be an ISO date (YYYY-MM-DD), got {obj['as_of']!r}")
+
+    flags = obj["risk_flags"]
+    if not isinstance(flags, list) or not flags:
+        raise SchemaError("risk_flags must be a non-empty list")
+    bad = [f for f in flags if f not in RiskFlag.ALL]
+    if bad:
+        raise SchemaError(f"invalid risk flag(s) {bad}; allowed {RiskFlag.ALL}")
+    flags = list(dict.fromkeys(flags))  # dedupe, preserve order
+    if RiskFlag.NONE in flags and len(flags) > 1:
+        raise SchemaError("risk_flags: NONE may not be combined with other flags")
+
+    narrative = obj["narrative"]
+    if not isinstance(narrative, str) or not narrative.strip():
+        raise SchemaError("narrative must be a non-empty string")
+    if len(narrative) > 600:
+        raise SchemaError(f"narrative too long ({len(narrative)} > 600 chars)")
+
+    if obj["news_intensity"] not in NewsIntensity.ALL:
+        raise SchemaError(
+            f"invalid news_intensity {obj['news_intensity']!r}; allowed {NewsIntensity.ALL}"
+        )
+
+    conf = obj["confidence"]
+    if not isinstance(conf, (int, float)) or isinstance(conf, bool):
+        raise SchemaError("confidence must be a number")
+    if not (0.0 <= float(conf) <= 1.0):
+        raise SchemaError(f"confidence {conf} out of range [0, 1]")
+
+    cited = obj.get("headlines_cited", [])
+    if not isinstance(cited, list) or not all(isinstance(c, str) for c in cited):
+        raise SchemaError("headlines_cited must be a list of strings")
+
+    return NewsContextSummary(
+        as_of=obj["as_of"],
+        risk_flags=flags,
+        narrative=narrative.strip(),
+        news_intensity=obj["news_intensity"],
+        confidence=float(conf),
+        headlines_cited=list(cited),
+    )

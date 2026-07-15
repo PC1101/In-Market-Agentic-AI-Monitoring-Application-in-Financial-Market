@@ -20,7 +20,16 @@ FNSPID_RAW_DEFAULT = "data/news/fnspid_raw.parquet"
 # Column name aliases — FNSPID may differ across releases
 _DATE_COLS   = ["Date", "date", "DATE", "published_at", "publishedAt"]
 _TICKER_COLS = ["Stock_symbol", "ticker", "Ticker", "TICKER", "symbol", "Symbol"]
-_TEXT_COLS   = ["Article", "article", "headline", "Headline", "title", "Title", "text"]
+# NOTE: "Article_title" must come FIRST. FNSPID's nasdaq_exteral_data.csv has both
+# an "Article_title" column (the headline, populated for every row) and an "Article"
+# column (the scraped body, EMPTY for most pre-2010 rows). Matching "Article" first
+# silently dropped the headlines — verified 2026-07: only ~120 usable texts in
+# Jul-Sep 2007 vs 98k rows.
+_TEXT_COLS   = ["Article_title", "Article", "article", "headline", "Headline",
+                "title", "Title", "text"]
+# Optional provenance columns (kept when present; loaders must not require them).
+_URL_COLS       = ["Url", "url", "URL", "link", "Link"]
+_PUBLISHER_COLS = ["Publisher", "publisher", "Source", "source"]
 
 
 class FNSPIDLoader:
@@ -304,6 +313,12 @@ class FNSPIDLoader:
         if len(keep) < 3:
             # Fallback: keep all columns and let _normalise_columns sort it out
             return all_cols
+        # Optional provenance columns — keep when present, never required.
+        for candidates in [_URL_COLS, _PUBLISHER_COLS]:
+            for cand in candidates:
+                if cand.lower() in cols_lower:
+                    keep.append(cols_lower[cand.lower()])
+                    break
         return keep
 
     @staticmethod
@@ -331,7 +346,17 @@ class FNSPIDLoader:
                     f"Add the correct name to _{'_'.join(canonical.upper().split())}_COLS in news_loader.py."
                 )
 
-        df = df.rename(columns=col_map)[["date", "ticker", "article"]].copy()
+        # Optional provenance columns — map when present.
+        for canonical, candidates in [("url", _URL_COLS), ("publisher", _PUBLISHER_COLS)]:
+            for cand in candidates:
+                if cand.lower() in cols_lower:
+                    col_map[cols_lower[cand.lower()]] = canonical
+                    break
+
+        ordered = ["date", "ticker", "article"] + [
+            c for c in ("url", "publisher") if c in col_map.values()
+        ]
+        df = df.rename(columns=col_map)[ordered].copy()
         df["date"] = (
             pd.to_datetime(df["date"], utc=False, errors="coerce")
             .dt.tz_localize(None)   # strip any UTC info → tz-naive for consistent comparison

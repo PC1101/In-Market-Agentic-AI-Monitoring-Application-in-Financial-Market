@@ -19,3 +19,10 @@ Stat Arb/statsArb-dev/data/pit/*_pit.csv
 
 # FNSPID news caches (multi-GB; rebuilt by src/news_loader.py)
 Stat Arb/statsArb-dev/data/news/*.parquet
+
+# Monitoring news caches (rebuilt by monitoring/scripts/fetch_nyt_archive.py + build_news_cache.py)
+monitoring/news/data/
+
+# Python bytecode
+__pycache__/
+*.pyc

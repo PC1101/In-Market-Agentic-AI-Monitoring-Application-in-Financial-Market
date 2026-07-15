@@ -21,7 +21,7 @@ class LookaheadError(AssertionError):
 
 
 def as_of_context(returns: pd.Series, as_of, detector_alarms=None,
-                  lookback: int = 60) -> dict:
+                  lookback: int = 60, news: dict | None = None) -> dict:
     """Assemble the causal context an agent is allowed to see at ``as_of``.
 
     Args:
@@ -30,10 +30,16 @@ def as_of_context(returns: pd.Series, as_of, detector_alarms=None,
         detector_alarms: optional mapping detector_name -> list[Timestamp]; alarms
                          after ``as_of`` are dropped.
         lookback: number of trailing observations to summarise in the telemetry block.
+        news:    optional news block for the supervisor (Week 3). Either a dict with
+                 a validated News Context Agent summary plus signal/triage fields, or
+                 a status dict like ``{"status": "quiet"}`` / ``{"status":
+                 "unavailable", ...}`` for the SKIP / CLASSICAL_ESCALATION triage
+                 modes. It is included as ``context["news"]`` and covered by the
+                 same lookahead assertion as everything else.
 
     Returns:
-        A JSON-serialisable context dict with as_of, telemetry summary, and the
-        classical-detector firings visible so far.
+        A JSON-serialisable context dict with as_of, telemetry summary, the
+        classical-detector firings visible so far, and (if given) the news block.
     """
     as_of = pd.Timestamp(as_of)
     visible = returns.loc[:as_of].astype(float)
@@ -67,6 +73,8 @@ def as_of_context(returns: pd.Series, as_of, detector_alarms=None,
         "telemetry": telemetry,
         "detector_alarms": visible_alarms,
     }
+    if news is not None:
+        context["news"] = news
     assert_no_lookahead(context, as_of)
     return context
 
