@@ -180,10 +180,14 @@ A teammate's parallel Week-3 implementation (`origin/week3-news-agents`, documen
 - **Superseded/dropped**: their `agentic/news_agent.py`, `test_news_schema.py`,
   `test_supervisor_v2.py` (this branch's news agent, schema, and supervisor-v3 subsume
   them); colliding `agentic/` + `news/` files resolved to this branch's versions.
-- **Finding kept for the write-up**: their `news_coverage.csv` gate passes
-  `calm_2004_2006` on volume (91,065 articles) yet finds `n_risk_articles=1` — pre-2009
-  FNSPID is the Russian Lenta.ru scrape, so a volume-based coverage gate is blind to
-  unusable content. The NYT Archive supplement (above) is the fix.
+- **Finding kept for the write-up**: their original coverage gate ran on the raw FNSPID
+  store and passed `calm_2004_2006` on volume (91,065 articles) yet found
+  `n_risk_articles=1` — pre-2009 FNSPID is the Russian Lenta.ru scrape, so a store-level
+  volume gate is blind to unusable content. `news/coverage.py` has been repointed at the
+  pipeline's actual caches (NYT Archive + Cyrillic-cleaned FNSPID, i.e. what the agents
+  see); the regenerated `news_coverage.csv` shows `calm_2004_2006` = 31,051 articles
+  (30,958 NYT / 93 FNSPID) with **854** risk hits, and every event window passes the
+  gate with a per-source breakdown.
 
 ## Run it
 ```bash
