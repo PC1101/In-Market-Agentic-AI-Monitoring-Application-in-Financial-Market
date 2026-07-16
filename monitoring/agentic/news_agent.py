@@ -9,7 +9,7 @@ from __future__ import annotations
 from .guardrails import assert_no_lookahead, filter_news_by_timestamp, scrub_future_dated
 from .model import LocalModel
 from .prompts import build_news_prompt, NEWS_PROMPT_VERSION
-from .schemas import validate_news_flags, NewsFlags, SchemaError
+from .schemas import validate_news_flags, NewsFlags, SchemaError, NEWS_FLAGS_JSON_SCHEMA
 
 
 def run_news_agent(as_of: str, articles: list[dict], model: LocalModel,
@@ -28,14 +28,14 @@ def run_news_agent(as_of: str, articles: list[dict], model: LocalModel,
     assert_no_lookahead({"as_of": as_of, "articles": articles}, as_of)
 
     system, user = build_news_prompt(as_of, articles, max_articles=max_articles)
-    raw = model.complete(system, user)
+    raw = model.complete(system, user, json_schema=NEWS_FLAGS_JSON_SCHEMA)
     error = None
     try:
         flags = validate_news_flags(raw)
     except SchemaError as e:
         error = str(e)
         repair = user + f"\n\nYour previous output was invalid: {e}\nReturn corrected JSON."
-        raw = model.complete(system, repair)
+        raw = model.complete(system, repair, json_schema=NEWS_FLAGS_JSON_SCHEMA)
         flags = validate_news_flags(raw)
 
     # The model may not have been shown every article (max_articles cap) and may

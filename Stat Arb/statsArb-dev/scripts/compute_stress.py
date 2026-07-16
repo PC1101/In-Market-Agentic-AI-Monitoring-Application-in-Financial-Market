@@ -1,27 +1,33 @@
 #!/usr/bin/env python3
 """
-Run FinGPT inference on FNSPID headlines to produce a regime stress series.
+Run FinBERT/FinGPT inference on FNSPID headlines to produce a regime stress series.
 
 Requires (install first):
-    pip install torch transformers peft accelerate bitsandbytes huggingface_hub yfinance
+    pip install torch transformers huggingface_hub yfinance
+
+For FinGPT (--model-type fingpt, requires >=8 GB VRAM):
+    pip install peft accelerate bitsandbytes
 
 Steps:
   1. Load sector-filtered FNSPID headlines (run cache_news.py first).
-  2. Load FinGPT 7B (LLaMA2 + LoRA) on GPU — downloads ~14 GB on first run.
+  2. Load sentiment model on GPU.
+     - finbert (default): ProsusAI/finbert (~400 MB, fits 4 GB GPU)
+     - fingpt: LLaMA2-7B + LoRA (~14 GB download, requires >=8 GB VRAM)
   3. Score each trading day's headlines → daily stress in [0, 1].
      Stress on day T is derived from T-1 headlines (look-ahead guard).
   4. Save stress series: data/news/stress_<etf>.csv
   5. Generate diagnostic chart: results/fingpt_stress_vs_vix_<etf>.png
-     (compare FinGPT stress to VIX to check for GPT training-data bias)
+     (compare stress to VIX to check for training-data bias)
 
 LOOK-AHEAD BIAS WARNING:
-  FinGPT may over-predict stress during historical crises because its training
-  data includes post-crisis retrospectives. Inspect the diagnostic chart
-  carefully. Stress for pre-1999 periods will be NaN (no FNSPID coverage).
+  Both models were trained on financial corpora that may include post-crisis
+  retrospectives. Inspect the diagnostic chart carefully before trusting
+  backtest results from crisis periods (GFC 2008, COVID 2020).
 
 Usage:
     python scripts/compute_stress.py --etf xlf
-    python scripts/compute_stress.py --etf xlf --device cpu       # slow, for testing
+    python scripts/compute_stress.py --etf xlf --model-type fingpt  # >=8 GB VRAM only
+    python scripts/compute_stress.py --etf xlf --device cpu         # slow, for testing
     python scripts/compute_stress.py --etf xlk --threshold 0.35
 """
 import argparse
@@ -41,7 +47,11 @@ import yaml
 
 from src.news_loader import FNSPIDLoader
 from src.fingpt_sentiment import (
-    FinGPTSentimentEngine, FINGPT_BASE_DEFAULT, FINGPT_LORA_DEFAULT
+    FinBERTSentimentEngine,
+    FinGPTSentimentEngine,
+    FINBERT_MODEL_DEFAULT,
+    FINGPT_BASE_DEFAULT,
+    FINGPT_LORA_DEFAULT,
 )
 from src.regime_filter import RegimeFilter
 
@@ -53,10 +63,14 @@ def parse_args():
     )
     p.add_argument("--etf", required=True,
                    help="Sector ETF ticker (e.g. xlf).")
+    p.add_argument("--model-type", default="finbert", choices=["finbert", "fingpt"],
+                   help="Sentiment backend: finbert (default, <=8 GB GPU) or fingpt (>=8 GB VRAM).")
+    p.add_argument("--finbert-model", default=FINBERT_MODEL_DEFAULT,
+                   help=f"HuggingFace FinBERT model (default: {FINBERT_MODEL_DEFAULT}).")
     p.add_argument("--base-model", default=FINGPT_BASE_DEFAULT,
-                   help=f"HuggingFace base model (default: {FINGPT_BASE_DEFAULT}).")
+                   help=f"[fingpt only] HuggingFace base LLM (default: {FINGPT_BASE_DEFAULT}).")
     p.add_argument("--lora-model", default=FINGPT_LORA_DEFAULT,
-                   help=f"HuggingFace LoRA adapter (default: {FINGPT_LORA_DEFAULT}).")
+                   help=f"[fingpt only] HuggingFace LoRA adapter (default: {FINGPT_LORA_DEFAULT}).")
     p.add_argument("--device", default="cuda", choices=["cuda", "cpu"],
                    help="Inference device (default: cuda).")
     p.add_argument("--cache-dir", default="data/news",
@@ -104,7 +118,7 @@ def _generate_diagnostic_chart(
         axs = [axs]
 
     axs[0].fill_between(stress.index, stress.fillna(0).values,
-                        alpha=0.4, color="tomato", label="FinGPT stress (FNSPID)")
+                        alpha=0.4, color="tomato", label="Sentiment stress (FNSPID)")
     axs[0].plot(stress.index, stress.values, lw=0.5, color="firebrick", alpha=0.7)
     axs[0].axhline(threshold, ls="--", lw=1.2, color="darkred",
                    label=f"Threshold ({threshold:.0%})")
@@ -112,8 +126,8 @@ def _generate_diagnostic_chart(
     axs[0].set_ylim(0, 1.05)
     axs[0].legend(loc="upper left", fontsize=9)
     axs[0].set_title(
-        f"FinGPT Regime Stress — {etf.upper()} (source: FNSPID)\n"
-        "WARNING: FinGPT training data includes post-crisis retrospectives. "
+        f"Regime Stress — {etf.upper()} (source: FNSPID)\n"
+        "WARNING: Model training data may include post-crisis retrospectives. "
         "Compare against VIX to assess look-ahead bias before trusting results."
     )
 
@@ -146,12 +160,17 @@ def main():
         etf, (cfg["st_dt"], cfg["ed_dt"])
     )
 
+    model_label = args.model_type.upper()
     print("=" * 60)
     print(f"  ETF        : {etf.upper()}")
-    print(f"  Date range : {default_start} → {default_end}")
+    print(f"  Date range : {default_start} -> {default_end}")
+    print(f"  Model type : {model_label}")
     print(f"  Device     : {args.device}")
-    print(f"  Base model : {args.base_model}")
-    print(f"  LoRA model : {args.lora_model}")
+    if args.model_type == "finbert":
+        print(f"  FinBERT    : {args.finbert_model}")
+    else:
+        print(f"  Base model : {args.base_model}")
+        print(f"  LoRA model : {args.lora_model}")
     print(f"  Threshold  : {args.threshold:.0%}")
     print("=" * 60)
 
@@ -163,14 +182,22 @@ def main():
     total_headlines = sum(len(v) for v in news_by_date.values())
     print(f"  {n_days} days with headlines ({total_headlines:,} total articles).")
 
-    # Step 2: Load FinGPT
-    print(f"\n[2/3] Loading FinGPT on {args.device}...")
-    print("  (First run downloads ~14 GB LLaMA2 base model from HuggingFace)")
-    engine = FinGPTSentimentEngine(
-        base_model=args.base_model,
-        lora_model=args.lora_model,
-        device=args.device,
-    )
+    # Step 2: Load sentiment engine
+    print(f"\n[2/3] Loading {model_label} on {args.device}...")
+    if args.model_type == "finbert":
+        print("  (First run downloads ~400 MB ProsusAI/finbert from HuggingFace)")
+        engine = FinBERTSentimentEngine(
+            model_name=args.finbert_model,
+            device=args.device,
+        )
+    else:
+        print("  (First run downloads ~14 GB LLaMA2 base model from HuggingFace)")
+        print("  WARNING: FinGPT requires >=8 GB VRAM. Use --model-type finbert for 4 GB GPUs.")
+        engine = FinGPTSentimentEngine(
+            base_model=args.base_model,
+            lora_model=args.lora_model,
+            device=args.device,
+        )
 
     # Step 3: Build stress series (T-1 look-ahead guard enforced inside build())
     print("\n[3/3] Scoring headlines and building stress series...")
@@ -198,7 +225,7 @@ def main():
           f"({above / max(stress.notna().sum(), 1):.1%} of days with data)")
 
     # Diagnostic chart
-    diag_path = os.path.join("results", f"fingpt_stress_vs_vix_{etf}.png")
+    diag_path = os.path.join("results", f"stress_vs_vix_{etf}.png")
     _generate_diagnostic_chart(stress, etf, args.threshold, diag_path)
 
     print(f"\n=== Next steps ===")

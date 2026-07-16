@@ -1,6 +1,6 @@
-"""Agentic monitoring framework scaffold (Week 2).
+"""Agentic monitoring framework.
 
-Provides the pieces the Week-3 agents are built on:
+Provides the pieces the agents are built on:
   * ``schemas``   — the structured-JSON assessment contract + a validator.
   * ``prompts``   — prompt templates for the Performance Supervisor Agent.
   * ``guardrails``— information-parity guards (as-of dating, timestamp filtering).
@@ -16,8 +16,8 @@ from .schemas import (
 from .guardrails import (
     as_of_context, assert_no_lookahead, filter_news_by_timestamp, scrub_future_dated,
 )
-from .model import LocalModel, OfflineStubModel, default_model
-from .prompts import build_supervisor_prompt_v2, SUPERVISOR_PROMPT_VERSION_V2
+from .model import LocalModel, OfflineStubModel, OllamaModel, default_model, make_model
+from .prompts import build_supervisor_prompt_v3, SUPERVISOR_PROMPT_VERSION_V3
 from .logging_utils import RunLogger
 from .runner import run_supervisor
 from .news_agent import run_news_agent
@@ -37,9 +37,11 @@ __all__ = [
     "scrub_future_dated",
     "LocalModel",
     "OfflineStubModel",
+    "OllamaModel",
     "default_model",
-    "build_supervisor_prompt_v2",
-    "SUPERVISOR_PROMPT_VERSION_V2",
+    "make_model",
+    "build_supervisor_prompt_v3",
+    "SUPERVISOR_PROMPT_VERSION_V3",
     "RunLogger",
     "run_supervisor",
     "run_news_agent",

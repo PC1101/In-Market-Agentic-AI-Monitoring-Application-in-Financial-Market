@@ -12,7 +12,7 @@ new end-to-end driver `monitoring/run_agentic.py`.
 | Macro integration (FRED/ALFRED, point-in-time vintages) | ✅ | `monitoring/macro/` — 3 vintage series (UNRATE 1,400 / CPIAUCSL 2,890 / INDPRO 33,666 vintage rows) + 5 daily series (VIXCLS, DGS10, DGS2, DFF, TEDRATE) in `data/macro/` |
 | Filtering pipeline: risk filter → daily signals → triage | ✅ | `news/filter.py` → `news/aggregate.py` → `news/triage.py` |
 | News Context Agent v1 (schema, prompt, guardrails, runner) | ✅ | `agentic/news_agent.py`, `agentic/schemas.py` (`NEWS_FLAGS_JSON_SCHEMA`), `agentic/prompts.py` (`news-context-v1`) |
-| Performance Supervisor v2 (telemetry + classical + news + macro) | ✅ | `agentic/prompts.py` (`supervisor-v2`); `runner.run_supervisor` takes a prompt builder |
+| Performance Supervisor v3 (telemetry + classical + news + macro) | ✅ | `agentic/prompts.py` (`supervisor-v3`; v2 is the teammate's example-based telemetry-only prompt); `runner.run_supervisor` takes a prompt builder |
 | Local model integration (real LLM, not stub) | ✅ | Ollama + qwen2.5:3b via `agentic/model.py` (`default_model`) |
 | End-to-end agentic run on Aug-2007 with valid JSON | ✅ | `run_agentic.py` — see Run results below |
 
@@ -99,7 +99,7 @@ assessment, and latency.
 
 ## Open items for Week 4
 
-1. Prompt iteration under version tags (`news-context-v2`, `supervisor-v3`, …)
+1. Prompt iteration under version tags (`news-context-v2`, `supervisor-v4`, …)
    with the JSONL logs as the comparison substrate.
 2. Two-pass with/without-events training control (the Week-4 2×2 cell).
 3. All-6-windows × both-strategies agentic run + H1/H2/H3 metrics vs the classical

@@ -39,7 +39,7 @@ flowchart TD
         GUARD["Guardrails<br/>as-of context, timestamp filter,<br/>future-text scrub, lookahead assert"]
         TRIAGE["Triage<br/>skip / cheap / thinking /<br/>classical escalation"]
         NEWSAGENT["News Context Agent<br/>(qwen2.5:3b, JSON schema)"]
-        SUP["Performance Supervisor v2<br/>(qwen2.5:3b, JSON schema)"]
+        SUP["Performance Supervisor v3<br/>(qwen2.5:3b, JSON schema)"]
         LOG["JSONL audit log<br/>(prompt version, raw output,<br/>validated assessment, latency)"]
         GUARD --> TRIAGE
         TRIAGE --> NEWSAGENT
@@ -152,7 +152,7 @@ flowchart TD
     THINK --> NA
     ESC --> NA
     NA["News Context Agent<br/>filtered headlines to risk flags<br/>(validated JSON, 1 repair retry)"] --> SV
-    SV["Performance Supervisor v2<br/>telemetry + alarms + macro + news flags<br/>to state / action / root cause / confidence"] --> OUT["JSONL audit record"]
+    SV["Performance Supervisor v3<br/>telemetry + alarms + macro + news flags<br/>to state / action / root cause / confidence"] --> OUT["JSONL audit record"]
 ```
 
 ## Two agents, structured output only
@@ -160,7 +160,7 @@ flowchart TD
 - **News Context Agent** reads the filtered headlines for the day and must
   return a schema-validated object: `overall_risk` (LOW / ELEVATED / HIGH /
   SEVERE), flag-and-evidence pairs, a short narrative, and confidence.
-- **Performance Supervisor v2** receives strategy telemetry, classical
+- **Performance Supervisor v3** receives strategy telemetry, classical
   detector alarms, the macro block, and the news agent's summary, and returns
   the operational assessment: `state` (NORMAL / WATCH / ALERT / CRITICAL),
   `action` (HOLD / INVESTIGATE / REDUCE / HALT), a root-cause sentence,
@@ -168,7 +168,7 @@ flowchart TD
 
 Both outputs are validated against JSON schemas with exactly one repair retry
 (the model sees its own validation error once, then the run hard-fails).
-Prompts are version-tagged (`news-context-v1`, `supervisor-v2`) so prompt
+Prompts are version-tagged (`news-context-v1`, `supervisor-v3`) so prompt
 iteration is trackable, and every invocation is logged to a replayable JSONL
 audit file with prompt version, raw output, validated result, and latency.
 

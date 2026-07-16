@@ -1,7 +1,7 @@
 """Prompt templates for the agentic monitors.
 
-Week 2 ships the Performance Supervisor Agent prompt: it receives strategy telemetry and
-the classical-detector firings visible as of the decision date, and must return a single
+The Performance Supervisor Agent receives strategy telemetry and the
+classical-detector firings visible as of the decision date, and must return a single
 JSON object matching ``ASSESSMENT_JSON_SCHEMA``. Prompts are version-tagged so Week-4
 prompt iteration can be tracked (VRI: "agent prompts iterated and version-controlled").
 """
@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import json
 
-from .schemas import ASSESSMENT_JSON_SCHEMA, State, Action, NEWS_FLAGS_JSON_SCHEMA, OverallRisk
+from .schemas import State, Action, NEWS_FLAGS_JSON_SCHEMA, OverallRisk
 
-SUPERVISOR_PROMPT_VERSION = "supervisor-v1"
+# v2: raw JSON-Schema dump replaced by a concrete example — small local models
+# (llama3.2:3b) echoed the schema wrapper and nested the assessment under "properties".
+SUPERVISOR_PROMPT_VERSION = "supervisor-v2"
 
 SUPERVISOR_SYSTEM = f"""\
 You are a Performance Supervisor monitoring a systematic trading strategy. Each day you
@@ -24,14 +26,22 @@ You may ONLY use the information provided in the user message. It reflects what 
 as of the stated decision date. Do not speculate about future events or use knowledge of
 what happened after the decision date.
 
-Respond with a SINGLE JSON object and nothing else. It must conform to this schema:
+Respond with a SINGLE flat JSON object and nothing else — no schema, no wrapper, no
+markdown. It must have exactly these fields, like this example:
 
-{json.dumps(ASSESSMENT_JSON_SCHEMA, indent=2)}
+{{
+  "state": "WATCH",
+  "action": "INVESTIGATE",
+  "root_cause": "One or two sentences naming the most likely driver.",
+  "confidence": 0.7,
+  "as_of": "2008-09-15",
+  "detectors_cited": ["page_hinkley"]
+}}
 
 Field guidance:
-- state: {State.ALL} — escalate as evidence of a break accumulates.
-- action: {Action.ALL} — HOLD when normal; REDUCE/HALT as risk rises; INVESTIGATE when
-  signals are ambiguous.
+- state: one of {State.ALL} — escalate as evidence of a break accumulates.
+- action: one of {Action.ALL} — HOLD when normal; REDUCE/HALT as risk rises; INVESTIGATE
+  when signals are ambiguous.
 - root_cause: one or two sentences naming the most likely driver.
 - confidence: your calibrated confidence in this assessment, 0..1.
 - as_of: echo the decision date exactly.
@@ -58,9 +68,10 @@ def build_supervisor_prompt(context: dict) -> tuple[str, str]:
     return SUPERVISOR_SYSTEM, user
 
 
-SUPERVISOR_PROMPT_VERSION_V2 = "supervisor-v2"
+# v3 (Week 3): v2 plus optional macro-market and News Context Agent blocks.
+SUPERVISOR_PROMPT_VERSION_V3 = "supervisor-v3"
 
-SUPERVISOR_SYSTEM_V2 = SUPERVISOR_SYSTEM + """
+SUPERVISOR_SYSTEM_V3 = SUPERVISOR_SYSTEM + """
 You may additionally receive:
 - A macro-market block (VIX, Treasury yields, fed funds, TED spread, and the latest
   macro releases AS THEY WERE KNOWN on the decision date).
@@ -71,8 +82,8 @@ explain (root_cause), or discount them. Cite detectors in detectors_cited as bef
 """
 
 
-def build_supervisor_prompt_v2(context: dict) -> tuple[str, str]:
-    """v2: telemetry + detector alarms + optional macro block + optional news summary."""
+def build_supervisor_prompt_v3(context: dict) -> tuple[str, str]:
+    """v3: telemetry + detector alarms + optional macro block + optional news summary."""
     parts = [
         f"Decision date (as_of): {context['as_of']}",
         f"Strategy telemetry:\n{json.dumps(context['telemetry'], indent=2)}",
@@ -85,7 +96,7 @@ def build_supervisor_prompt_v2(context: dict) -> tuple[str, str]:
     if context.get("news"):
         parts.append(f"News Context Agent summary:\n{json.dumps(context['news'], indent=2)}")
     parts.append("Return your JSON assessment now.")
-    return SUPERVISOR_SYSTEM_V2, "\n\n".join(parts)
+    return SUPERVISOR_SYSTEM_V3, "\n\n".join(parts)
 
 
 NEWS_PROMPT_VERSION = "news-context-v1"

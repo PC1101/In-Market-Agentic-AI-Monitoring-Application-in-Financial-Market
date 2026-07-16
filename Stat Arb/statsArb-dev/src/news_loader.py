@@ -198,7 +198,10 @@ class FNSPIDLoader:
         """
         if os.path.exists(self.filtered_path) and not force:
             print(f"[FNSPIDLoader] Loading filtered cache: {self.filtered_path}")
-            return pd.read_parquet(self.filtered_path)
+            df = pd.read_parquet(self.filtered_path)
+            if df["date"].dt.tz is not None:
+                df["date"] = df["date"].dt.tz_localize(None)
+            return df
 
         if not os.path.exists(self.raw_path):
             raise FileNotFoundError(
@@ -260,6 +263,11 @@ class FNSPIDLoader:
                 f"Filtered FNSPID not found at {self.filtered_path}. "
                 f"Run:  python scripts/cache_news.py --etf {self.etf}"
             )
+
+        # Strip timezone from stored dates if present (handles parquets written
+        # before the tz_localize(None) fix was applied).
+        if df["date"].dt.tz is not None:
+            df["date"] = df["date"].dt.tz_localize(None)
 
         mask = (
             (df["date"] >= pd.Timestamp(start_dt))
@@ -324,7 +332,11 @@ class FNSPIDLoader:
                 )
 
         df = df.rename(columns=col_map)[["date", "ticker", "article"]].copy()
-        df["date"] = pd.to_datetime(df["date"], utc=False, errors="coerce").dt.normalize()
+        df["date"] = (
+            pd.to_datetime(df["date"], utc=False, errors="coerce")
+            .dt.tz_localize(None)   # strip any UTC info → tz-naive for consistent comparison
+            .dt.normalize()
+        )
         df = df.dropna(subset=["date", "article"]).reset_index(drop=True)
         df = df.sort_values("date")
         return df

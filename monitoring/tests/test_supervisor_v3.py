@@ -1,4 +1,4 @@
-from agentic.prompts import (build_supervisor_prompt_v2, SUPERVISOR_PROMPT_VERSION_V2,
+from agentic.prompts import (build_supervisor_prompt_v3, SUPERVISOR_PROMPT_VERSION_V3,
                              build_supervisor_prompt)
 from agentic.runner import run_supervisor
 from agentic.model import OfflineStubModel
@@ -27,21 +27,21 @@ def _ctx(with_news=True, with_macro=True):
 
 
 def test_v2_prompt_includes_news_and_macro():
-    system, user = build_supervisor_prompt_v2(_ctx())
+    system, user = build_supervisor_prompt_v3(_ctx())
     assert "forced_deleveraging" in user
     assert "vixcls" in user
     assert "2007-08-09" in user
 
 
 def test_v2_prompt_omits_absent_blocks():
-    _, user = build_supervisor_prompt_v2(_ctx(with_news=False, with_macro=False))
+    _, user = build_supervisor_prompt_v3(_ctx(with_news=False, with_macro=False))
     assert "News Context Agent" not in user and "Macro" not in user
 
 
 def test_run_supervisor_accepts_custom_builder_and_version():
     a = run_supervisor(_ctx(), OfflineStubModel(),
-                       prompt_builder=build_supervisor_prompt_v2,
-                       prompt_version=SUPERVISOR_PROMPT_VERSION_V2)
+                       prompt_builder=build_supervisor_prompt_v3,
+                       prompt_version=SUPERVISOR_PROMPT_VERSION_V3)
     assert isinstance(a, AgentAssessment)
     assert a.as_of == "2007-08-09"
 

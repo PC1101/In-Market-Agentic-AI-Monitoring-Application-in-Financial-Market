@@ -3,7 +3,7 @@
 Daily loop over the window: build the day's causal context (telemetry, classical
 alarms, as-of macro, filtered news), triage how much model to spend (skip /
 cheap / thinking / classical-escalation), and on escalated days run the News
-Context Agent then the Performance Supervisor (v2 prompt). Every step is
+Context Agent then the Performance Supervisor (v3 prompt). Every step is
 lookahead-guarded; every model call is logged to JSONL.
 
 Usage (from monitoring/):
@@ -28,7 +28,7 @@ from agentic import as_of_context, RunLogger, run_supervisor
 from agentic.guardrails import assert_no_lookahead, LookaheadError
 from agentic.model import default_model
 from agentic.news_agent import run_news_agent
-from agentic.prompts import build_supervisor_prompt_v2, SUPERVISOR_PROMPT_VERSION_V2
+from agentic.prompts import build_supervisor_prompt_v3, SUPERVISOR_PROMPT_VERSION_V3
 from news.store import NewsStore
 from news.filter import filter_news
 from news.aggregate import daily_signals
@@ -98,7 +98,7 @@ def run_window(series: pd.Series, window, store: NewsStore, model,
                               max_articles=max_articles)
         rec["news_latency_s"] = round(time.time() - t0, 1)
 
-        # --- Performance Supervisor v2 ---
+        # --- Performance Supervisor v3 ---
         ctx = as_of_context(series, day, alarms_by_det)
         if macro_context is not None and Path(macro_dir).exists():
             ctx["macro"] = macro_context(day, macro_dir)
@@ -113,8 +113,8 @@ def run_window(series: pd.Series, window, store: NewsStore, model,
         t0 = time.time()
         assessment = run_supervisor(ctx, model, logger=logger,
                                     extra_label=f"{window.name}:{dec.mode}",
-                                    prompt_builder=build_supervisor_prompt_v2,
-                                    prompt_version=SUPERVISOR_PROMPT_VERSION_V2)
+                                    prompt_builder=build_supervisor_prompt_v3,
+                                    prompt_version=SUPERVISOR_PROMPT_VERSION_V3)
         rec["supervisor_latency_s"] = round(time.time() - t0, 1)
         rec["assessment"] = assessment.to_dict()
         records.append(rec)

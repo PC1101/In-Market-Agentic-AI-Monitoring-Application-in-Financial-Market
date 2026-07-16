@@ -5,7 +5,7 @@ import pytest
 from agentic import (
     validate_assessment, State, Action, ASSESSMENT_JSON_SCHEMA,
     as_of_context, assert_no_lookahead, filter_news_by_timestamp,
-    OfflineStubModel, RunLogger, run_supervisor,
+    OfflineStubModel, OllamaModel, RunLogger, run_supervisor, make_model,
 )
 from agentic.schemas import SchemaError
 from agentic.guardrails import LookaheadError
@@ -104,6 +104,25 @@ def test_run_supervisor_offline_produces_valid_json(returns, tmp_path):
     rows = logger.read_all()
     assert len(rows) == 1
     assert rows[0]["assessment"]["state"] == a.state
+
+
+# ---- model factory -----------------------------------------------------------
+
+def test_make_model_stub():
+    assert isinstance(make_model("stub"), OfflineStubModel)
+
+
+def test_make_model_ollama_keeps_tag():
+    m = make_model("ollama:llama3.2:3b")
+    assert isinstance(m, OllamaModel)
+    assert m.model == "llama3.2:3b"
+    assert m.name == "ollama:llama3.2:3b"
+
+
+@pytest.mark.parametrize("spec", ["", "ollama:", "gpt4", "openai:gpt-4"])
+def test_make_model_rejects_unknown_spec(spec):
+    with pytest.raises(ValueError):
+        make_model(spec)
 
 
 def test_stub_escalates_with_more_detectors(returns):
