@@ -4,24 +4,38 @@
 
   * ``OfflineStubModel`` — a deterministic, rule-based stand-in that reads the context and
     emits a schema-valid assessment WITHOUT any LLM. It lets the whole agentic pipeline
-    (prompting → schema validation → logging → evaluation) run and be tested offline this
-    week, before the real local model is wired in. It is NOT the research model — it is
-    test/CI scaffolding.
+    (prompting → schema validation → logging → evaluation) run and be tested offline,
+    and remains the CI model. It is NOT the research model — it is test scaffolding.
 
   * ``OllamaModel`` — a thin client for a locally-served model (e.g. Ollama on
     localhost:11434). It is import-safe with no server running; ``complete`` only reaches
-    out when actually called. This is where the Week-1 "local AI model" plugs in.
+    out when actually called.
 
-Both return a parsed dict; ``runner.run_supervisor`` validates it against the schema.
+Both return a parsed dict; the runners validate it against the relevant schema.
+
+Structured outputs: ``complete`` takes an optional per-call ``json_schema``. For Ollama
+it is passed as the ``format`` (grammar-constrained decoding server-side), so the
+response is guaranteed to have the schema's shape — small models otherwise tend to echo
+the schema wrapper instead of filling it in. Per-call (rather than pinned at
+construction) because one model instance serves BOTH the supervisor and the news agent,
+which have different output contracts.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 from abc import ABC, abstractmethod
 
 from .schemas import State, Action
+
+
+def _extract_as_of(text: str) -> str:
+    """Pull the ``as_of`` date out of a rendered user prompt (shared by the
+    supervisor and news-mode branches of ``OfflineStubModel``)."""
+    m = re.search(r"as_of\):\s*([0-9-]+)", text)
+    return m.group(1) if m else ""
 
 
 class LocalModel(ABC):
@@ -30,8 +44,13 @@ class LocalModel(ABC):
     name: str = "local-model"
 
     @abstractmethod
-    def complete(self, system: str, user: str) -> dict:
-        """Return a parsed JSON object (the agent's assessment)."""
+    def complete(self, system: str, user: str, json_schema: dict | None = None) -> dict:
+        """Return a parsed JSON object (the agent's assessment).
+
+        Args:
+            json_schema: optional output contract for structured decoding;
+                implementations that cannot constrain decoding may ignore it.
+        """
         raise NotImplementedError
 
     @staticmethod
@@ -48,11 +67,19 @@ class LocalModel(ABC):
 
 
 class OfflineStubModel(LocalModel):
-    """Deterministic rule-based stand-in (no LLM). For offline pipeline tests."""
+    """Deterministic rule-based stand-in (no LLM). For offline pipeline tests.
+
+    Stands in for BOTH the Performance Supervisor Agent and the News Context Agent,
+    dispatching on which system prompt it is given.
+    """
 
     name = "offline-stub"
 
-    def complete(self, system: str, user: str) -> dict:
+    def complete(self, system: str, user: str, json_schema: dict | None = None) -> dict:
+        # Dispatch on the role declaration, not a bare substring: the supervisor-v3
+        # system prompt also *mentions* the News Context Agent.
+        if "You are a News Context Agent" in system:
+            return self._complete_news(user)
         ctx = self._parse_user(user)
         tel = ctx.get("telemetry", {})
         alarms = ctx.get("detector_alarms", {})
@@ -90,12 +117,32 @@ class OfflineStubModel(LocalModel):
         }
 
     @staticmethod
+    def _complete_news(user: str) -> dict:
+        """News-mode branch: derive a schema-valid ``NewsFlags`` payload from the
+        rendered news-agent user prompt, without any LLM."""
+        n_articles = user.count("\n- [")
+        risky = any(t in user.lower() for t in ("meltdown", "crash", "liquidat", "crisis"))
+        risk = "HIGH" if (risky and n_articles >= 3) else ("ELEVATED" if risky else "LOW")
+        return {
+            "overall_risk": risk,
+            "risk_flags": (
+                [{"flag": "stress_language_in_news", "evidence": "risk terms present in headlines"}]
+                if risky else []
+            ),
+            "narrative": f"Reviewed {n_articles} filtered articles; "
+                         + ("stress language present." if risky else "no stress language."),
+            "confidence": 0.5,
+            "as_of": _extract_as_of(user),
+            "n_articles": n_articles,
+        }
+
+    @staticmethod
     def _parse_user(user: str) -> dict:
         """Recover the structured context from the user prompt text."""
         ctx: dict = {}
-        m = re.search(r"as_of\):\s*([0-9-]+)", user)
-        if m:
-            ctx["as_of"] = m.group(1)
+        as_of = _extract_as_of(user)
+        if as_of:
+            ctx["as_of"] = as_of
         ctx["telemetry"] = _grab_json_after(user, "Strategy telemetry:")
         ctx["detector_alarms"] = _grab_json_after(user, "visible so far:")
         return ctx
@@ -126,15 +173,16 @@ def _grab_json_after(text: str, marker: str) -> dict:
 class OllamaModel(LocalModel):
     """Thin client for a locally-served Ollama model. Import-safe; lazy network use.
 
-    If ``json_schema`` is given it is passed as Ollama's ``format`` (structured
-    outputs): decoding is grammar-constrained server-side, so the response is
-    guaranteed to have the schema's shape. Small models otherwise tend to echo the
-    schema wrapper instead of filling it in.
+    A ``json_schema`` (per ``complete`` call, or as a constructor default) is passed
+    as Ollama's ``format`` (structured outputs): decoding is grammar-constrained
+    server-side, so the response is guaranteed to have the schema's shape.
     """
 
-    def __init__(self, model: str = "llama3.1", host: str = "http://localhost:11434",
-                 temperature: float = 0.0, timeout: float = 300.0,
+    def __init__(self, model: str = "qwen2.5:3b", host: str = "http://localhost:11434",
+                 temperature: float = 0.0, timeout: float = 600.0,
                  json_schema: dict | None = None):
+        # 600 s: CPU inference on a 3B model with ~4k-token news prompts routinely
+        # exceeds shorter timeouts, especially on the first call (model load).
         self.model = model
         self.host = host.rstrip("/")
         self.temperature = temperature
@@ -142,14 +190,15 @@ class OllamaModel(LocalModel):
         self.json_schema = json_schema
         self.name = f"ollama:{model}"
 
-    def complete(self, system: str, user: str) -> dict:
+    def complete(self, system: str, user: str, json_schema: dict | None = None) -> dict:
         import urllib.request  # stdlib only; no hard dependency
 
+        schema = json_schema if json_schema is not None else self.json_schema
         payload = {
             "model": self.model,
             "prompt": f"{system}\n\n{user}",
             "stream": False,
-            "format": self.json_schema if self.json_schema is not None else "json",
+            "format": schema if schema is not None else "json",
             "options": {"temperature": self.temperature},
         }
         req = urllib.request.Request(
@@ -162,19 +211,33 @@ class OllamaModel(LocalModel):
         return self._extract_json(body.get("response", ""))
 
 
-def make_model(spec: str) -> LocalModel:
-    """Build a LocalModel from a CLI spec: ``stub`` or ``ollama:<model-name>``.
+def default_model(spec: str | None = None) -> LocalModel:
+    """Build a LocalModel from a spec string.
 
-    ``ollama:`` specs keep everything after the first colon as the model name, so
-    tags work naturally (e.g. ``ollama:llama3.2:3b``). Ollama models are constrained
-    to the supervisor assessment schema via structured outputs.
+    Specs: "stub" | "ollama" (qwen2.5:3b) | "ollama:<model-name>" — everything after
+    the first colon is the model name, so tags work naturally (e.g.
+    "ollama:llama3.2:3b"). Falls back to the MONITOR_MODEL env var, then to the
+    offline stub, so tests and CI never require a running Ollama server.
     """
-    if spec == "stub":
+    spec = spec or os.environ.get("MONITOR_MODEL", "stub")
+    if spec in ("stub", "offline"):
         return OfflineStubModel()
+    if spec == "ollama":
+        return OllamaModel()
     if spec.startswith("ollama:"):
         name = spec.split(":", 1)[1]
         if not name:
             raise ValueError("empty ollama model name; expected e.g. 'ollama:llama3.2:3b'")
-        from .schemas import ASSESSMENT_JSON_SCHEMA
-        return OllamaModel(model=name, json_schema=ASSESSMENT_JSON_SCHEMA)
-    raise ValueError(f"unknown model spec {spec!r}; expected 'stub' or 'ollama:<name>'")
+        return OllamaModel(model=name)
+    raise ValueError(f"unknown model spec {spec!r}; use 'stub', 'ollama', or 'ollama:<name>'")
+
+
+def make_model(spec: str) -> LocalModel:
+    """Build a LocalModel from an explicit CLI spec: ``stub`` or ``ollama:<name>``.
+
+    Unlike ``default_model`` there is no env-var or stub fallback — an empty or
+    unknown spec is an error (CLI callers should fail loudly, not silently degrade).
+    """
+    if not spec:
+        raise ValueError("empty model spec; expected 'stub' or 'ollama:<name>'")
+    return default_model(spec)

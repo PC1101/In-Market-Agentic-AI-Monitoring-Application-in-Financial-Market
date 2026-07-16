@@ -16,6 +16,11 @@ Cross_Sectional_Momentum/
 
 # Heavy price caches (rebuilt by scripts; keep small audit files)
 Stat Arb/statsArb-dev/data/pit/*_pit.csv
+.gstack/
+
+# Data payloads
+data/fnspid/
+data/macro/
 
 # FNSPID news caches (multi-GB; rebuilt by src/news_loader.py)
 Stat Arb/statsArb-dev/data/news/*.parquet

@@ -44,9 +44,9 @@ class TimedModel(LocalModel):
         self.name = inner.name
         self.call_latencies: list[float] = []
 
-    def complete(self, system: str, user: str) -> dict:
+    def complete(self, system: str, user: str, json_schema: dict | None = None) -> dict:
         t0 = perf_counter()
-        out = self.inner.complete(system, user)
+        out = self.inner.complete(system, user, json_schema=json_schema)
         self.call_latencies.append(perf_counter() - t0)
         return out
 

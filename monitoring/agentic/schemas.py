@@ -36,6 +36,14 @@ class Action:
     ALL = (HOLD, REDUCE, HALT, INVESTIGATE)
 
 
+class OverallRisk:
+    LOW = "LOW"
+    ELEVATED = "ELEVATED"
+    HIGH = "HIGH"
+    SEVERE = "SEVERE"
+    ALL = (LOW, ELEVATED, HIGH, SEVERE)
+
+
 #: JSON-Schema description embedded verbatim into prompts so the model knows the contract.
 ASSESSMENT_JSON_SCHEMA = {
     "type": "object",
@@ -117,4 +125,96 @@ def validate_assessment(obj: dict) -> AgentAssessment:
         confidence=float(conf),
         as_of=obj["as_of"],
         detectors_cited=list(cited),
+    )
+
+
+#: Output contract for the News Context Agent (Week 3).
+NEWS_FLAGS_JSON_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["overall_risk", "risk_flags", "narrative", "confidence", "as_of"],
+    "properties": {
+        "overall_risk": {"type": "string", "enum": list(OverallRisk.ALL)},
+        "risk_flags": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["flag", "evidence"],
+                "properties": {
+                    "flag": {"type": "string", "minLength": 1, "maxLength": 80},
+                    "evidence": {"type": "string", "minLength": 1, "maxLength": 500},
+                },
+            },
+        },
+        "narrative": {"type": "string", "minLength": 1, "maxLength": 1500},
+        "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "as_of": {"type": "string", "description": "ISO 8601 date (YYYY-MM-DD)"},
+        "n_articles": {"type": "integer", "minimum": 0},
+    },
+}
+
+
+@dataclass
+class NewsFlags:
+    """A validated News Context Agent output."""
+
+    overall_risk: str
+    risk_flags: list[dict]
+    narrative: str
+    confidence: float
+    as_of: str
+    n_articles: int = 0
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+def validate_news_flags(obj: dict) -> NewsFlags:
+    """Validate a raw dict against NEWS_FLAGS_JSON_SCHEMA (same style as
+    ``validate_assessment``)."""
+    if not isinstance(obj, dict):
+        raise SchemaError(f"news flags must be a JSON object, got {type(obj).__name__}")
+
+    missing = [k for k in NEWS_FLAGS_JSON_SCHEMA["required"] if k not in obj]
+    if missing:
+        raise SchemaError(f"missing required field(s): {missing}")
+
+    if obj["overall_risk"] not in OverallRisk.ALL:
+        raise SchemaError(f"invalid overall_risk {obj['overall_risk']!r}; allowed {OverallRisk.ALL}")
+
+    flags = obj["risk_flags"]
+    if not isinstance(flags, list):
+        raise SchemaError("risk_flags must be a list")
+    for f in flags:
+        if (not isinstance(f, dict) or not isinstance(f.get("flag"), str)
+                or not f["flag"].strip() or not isinstance(f.get("evidence"), str)
+                or not f["evidence"].strip()):
+            raise SchemaError(f"each risk flag needs non-empty 'flag' and 'evidence': {f!r}")
+
+    narrative = obj["narrative"]
+    if not isinstance(narrative, str) or not narrative.strip():
+        raise SchemaError("narrative must be a non-empty string")
+
+    conf = obj["confidence"]
+    if not isinstance(conf, (int, float)) or isinstance(conf, bool):
+        raise SchemaError("confidence must be a number")
+    if not (0.0 <= float(conf) <= 1.0):
+        raise SchemaError(f"confidence {conf} out of range [0, 1]")
+
+    try:
+        date.fromisoformat(obj["as_of"])
+    except (ValueError, TypeError):
+        raise SchemaError(f"as_of must be an ISO date, got {obj['as_of']!r}")
+
+    n_articles = obj.get("n_articles", 0)
+    if not isinstance(n_articles, int) or isinstance(n_articles, bool) or n_articles < 0:
+        raise SchemaError("n_articles must be a non-negative integer")
+
+    return NewsFlags(
+        overall_risk=obj["overall_risk"],
+        risk_flags=[{"flag": f["flag"].strip(), "evidence": f["evidence"].strip()} for f in flags],
+        narrative=narrative.strip(),
+        confidence=float(conf),
+        as_of=obj["as_of"],
+        n_articles=n_articles,
     )
