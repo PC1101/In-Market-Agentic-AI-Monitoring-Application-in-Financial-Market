@@ -29,7 +29,7 @@ SCHEMA = pa.schema([
 #: raw-CSV column name -> canonical name (first match per canonical wins)
 CANDIDATES = {
     "date": ["Date", "date", "Publish_date", "publish_date"],
-    "title": ["Article_title", "Title", "title", "Headline"],
+    "title": ["Article_title", "Title", "title", "Headline", "article"],
     "ticker": ["Stock_symbol", "Symbol", "ticker", "symbol"],
     "summary": ["Lsa_summary", "Textrank_summary", "Luhn_summary", "Summary", "summary"],
     "publisher": ["Publisher", "publisher"],
@@ -103,6 +103,66 @@ def build_store(csv_path, out_dir, start="2003-01-01", end="2016-12-31",
         for w in writers.values():
             w.close()
     return {"read": read, "kept": kept, "dropped_bad_date": dropped_bad_date}
+
+
+def build_store_from_parquet(parquet_path, out_dir, start="2003-01-01",
+                             end="2016-12-31") -> dict[str, int]:
+    """Build the year-partitioned store from a pre-existing parquet file.
+
+    Equivalent to ``build_store`` but accepts a parquet source instead of the
+    raw ~22 GB CSV. The raw FNSPID parquet lives at
+    ``Stat Arb/statsArb-dev/data/news/fnspid_raw.parquet`` (945 MB).
+
+    Usage (from monitoring/)::
+
+        python -c "
+        from news.store import build_store_from_parquet
+        build_store_from_parquet(
+            '../Stat Arb/statsArb-dev/data/news/fnspid_raw.parquet',
+            '../data/fnspid/store/')
+        "
+    """
+    parquet_path, out_dir = Path(parquet_path), Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    start_ts, end_ts = pd.Timestamp(start), pd.Timestamp(end)
+
+    df = pd.read_parquet(parquet_path)
+    # Remap source columns to canonical names using the same CANDIDATES dict.
+    col_map: dict[str, str] = {}
+    for canon, options in CANDIDATES.items():
+        for opt in options:
+            if opt in df.columns:
+                col_map[opt] = canon
+                break
+    df = df.rename(columns=col_map)
+    for c in COLS:
+        if c not in df.columns:
+            df[c] = ""
+
+    dates = pd.to_datetime(df["date"], errors="coerce", utc=True)
+    df["date"] = dates.dt.tz_localize(None)
+    bad = int(df["date"].isna().sum())
+    df = df.dropna(subset=["date"])
+    df = df[(df["date"] >= start_ts) & (df["date"] <= end_ts)].copy()
+
+    for c in COLS[1:]:
+        df[c] = df[c].fillna("").astype(str)
+
+    writers: dict[int, pq.ParquetWriter] = {}
+    try:
+        for year, group in df.groupby(df["date"].dt.year):
+            out_path = out_dir / f"year={year}.parquet"
+            table = pa.Table.from_pandas(group[COLS], schema=SCHEMA, preserve_index=False)
+            if year not in writers:
+                writers[int(year)] = pq.ParquetWriter(out_path, SCHEMA)
+            writers[int(year)].write_table(table)
+    finally:
+        for w in writers.values():
+            w.close()
+
+    kept = len(df)
+    print(f"Store built: {kept:,} articles kept ({bad} bad-date rows dropped)")
+    return {"read": kept + bad, "kept": kept, "dropped_bad_date": bad}
 
 
 class NewsStore:

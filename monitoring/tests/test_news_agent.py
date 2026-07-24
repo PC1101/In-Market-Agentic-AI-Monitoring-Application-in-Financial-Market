@@ -17,7 +17,7 @@ def test_default_model_ollama_with_name():
 def test_default_model_ollama_default_is_qwen():
     m = default_model("ollama")
     assert isinstance(m, OllamaModel)
-    assert m.model == "qwen2.5:3b"
+    assert m.model == "qwen2.5:1.5b"
 
 
 def test_default_model_env_fallback(monkeypatch):

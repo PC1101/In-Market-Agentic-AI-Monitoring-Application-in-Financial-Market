@@ -11,8 +11,10 @@ span that predates the evaluation window and contains both regimes; the fixed mo
 then filtered causally over the evaluation window. If ``train_returns`` is omitted, the
 parameters are estimated in-sample on the evaluation series itself — a documented
 compromise (the *parameters* are stationary constants, but they do touch the whole
-window); the emitted probability signal remains causal. ``run_classical.py`` supplies an
-explicit training period so the headline results respect parity.
+window); the emitted probability signal remains causal. ``run_classical.py`` supplies a
+pre-2007 training period (calm_2004_2006 curve for AL PCA, 2001-2006 slice for JT) so
+all four event-window results are out-of-sample. The calm_2004_2006 evaluation window
+is in-sample for AL PCA (parameters fit on that same curve) — a documented trade-off.
 
 An alarm fires on the rising edge where the filtered probability of the stressed state
 crosses ``threshold`` from below, subject to a cooldown. The stressed state is the one

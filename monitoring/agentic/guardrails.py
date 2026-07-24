@@ -148,3 +148,53 @@ def scrub_future_dated(records, as_of, text_fields=("title", "summary")) -> list
         if not future:
             kept.append(r)
     return kept
+
+
+# ---------------------------------------------------------------------------
+# Pretraining-leakage controls (§8): date-masking utilities (Condition B)
+# ---------------------------------------------------------------------------
+
+_MASK_TOKEN = "XXXX-XX-XX"
+
+
+def _mask_dates_in_value(val):
+    """Recursively replace ISO date strings in any JSON-serialisable structure."""
+    if isinstance(val, dict):
+        return {k: _mask_dates_in_value(v) for k, v in val.items()}
+    if isinstance(val, list):
+        return [_mask_dates_in_value(v) for v in val]
+    if isinstance(val, str):
+        return _ISO_DATE_RE.sub(_MASK_TOKEN, val)
+    return val
+
+
+def mask_dates_in_context(context: dict) -> dict:
+    """Return a deep copy of ``context`` with every ISO date replaced by ``XXXX-XX-XX``.
+
+    Used for Condition B of the pretraining-leakage harness (§8): the model sees
+    identical numerical evidence (telemetry, drawdown, detector counts, news narrative)
+    but cannot anchor to a specific historical date — separating evidence-driven skill
+    from memorised event-date associations.
+
+    Preserves all numeric fields unchanged (returns, drawdown, vol, alarm counts).
+    The replacement token ``XXXX-XX-XX`` is deliberately non-parseable as a date so
+    downstream validation is not confused.
+    """
+    return _mask_dates_in_value(context)
+
+
+def mask_dates_in_articles(articles: list[dict]) -> list[dict]:
+    """Return a copy of ``articles`` with ISO dates removed from ``date``, ``title``,
+    and ``summary`` fields.
+
+    Used alongside ``mask_dates_in_context`` in Condition B: news articles retain their
+    text content (which may carry stress signals) but not their publication dates.
+    """
+    masked = []
+    for a in articles:
+        copy = dict(a)
+        for field in ("date", "title", "summary"):
+            if field in copy and isinstance(copy[field], str):
+                copy[field] = _ISO_DATE_RE.sub(_MASK_TOKEN, copy[field])
+        masked.append(copy)
+    return masked

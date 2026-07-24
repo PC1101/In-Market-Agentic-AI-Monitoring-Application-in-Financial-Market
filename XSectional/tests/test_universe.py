@@ -80,3 +80,35 @@ def test_real_table_loads_and_is_sane():
     # roughly 500 members on a mid-sample date
     n = len(universe.members_on("2015-06-01", m))
     assert 480 <= n <= 520
+
+
+def test_crisis_era_removals():
+    """Regression: crisis-era delistings must have correct end_dates (survivorship-bias fix)."""
+    m = universe.load_membership()
+
+    # AIG removed 2008-09-22 (govt bailout; S&P index removal)
+    aig = m[m["ticker"] == "AIG"]
+    assert len(aig) >= 1, "AIG must appear in membership table"
+    aig_row = aig.sort_values("start_date").iloc[0]
+    assert pd.notna(aig_row["end_date"]), "AIG must have an end_date (removed Sept 2008)"
+    assert aig_row["end_date"] == pd.Timestamp("2008-09-22")
+    assert "AIG" in universe.members_on("2008-09-01", m)
+    assert "AIG" not in universe.members_on("2008-09-23", m)
+
+    # GM: two membership intervals — original ending bankruptcy removal, re-added 2013
+    gm = m[m["ticker"] == "GM"].sort_values("start_date").reset_index(drop=True)
+    assert len(gm) >= 2, "GM must have at least 2 membership intervals (pre-2009 + re-IPO)"
+    assert pd.notna(gm.iloc[0]["end_date"]), "GM original interval must have end_date"
+    assert gm.iloc[0]["end_date"] == pd.Timestamp("2009-06-08")
+    assert "GM" in universe.members_on("2008-01-01", m)    # original membership
+    assert "GM" not in universe.members_on("2010-06-01", m)  # gap (bankrupt/delisted)
+    assert "GM" in universe.members_on("2014-01-01", m)    # re-addition
+
+    # WM removed ~2008-09-30 (FDIC seizure Sept 25, 2008)
+    wm = m[m["ticker"] == "WM"]
+    assert len(wm) >= 1, "WM must appear in membership table"
+    wm_row = wm.sort_values("start_date").iloc[0]
+    assert pd.notna(wm_row["end_date"]), "WM must have an end_date (removed Sept 2008)"
+    assert wm_row["end_date"] == pd.Timestamp("2008-09-30")
+    assert "WM" in universe.members_on("2008-09-01", m)
+    assert "WM" not in universe.members_on("2008-10-01", m)

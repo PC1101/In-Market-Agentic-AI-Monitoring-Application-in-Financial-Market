@@ -1,0 +1,128 @@
+{
+  "n_pairs": 8,
+  "paired_results": {
+    "quant_meltdown_2007__AL_PCA": {
+      "window": "quant_meltdown_2007",
+      "strategy": "AL_PCA",
+      "classical_detected": true,
+      "classical_latency": 7,
+      "agentic_detected": true,
+      "agentic_latency": 0,
+      "agentic_failures": 0
+    },
+    "gfc_lehman_2008__AL_PCA": {
+      "window": "gfc_lehman_2008",
+      "strategy": "AL_PCA",
+      "classical_detected": true,
+      "classical_latency": 14,
+      "agentic_detected": true,
+      "agentic_latency": 0,
+      "agentic_failures": 0
+    },
+    "momentum_crash_2009__AL_PCA": {
+      "window": "momentum_crash_2009",
+      "strategy": "AL_PCA",
+      "classical_detected": true,
+      "classical_latency": 1,
+      "agentic_detected": true,
+      "agentic_latency": 0,
+      "agentic_failures": 0
+    },
+    "downgrade_2011__AL_PCA": {
+      "window": "downgrade_2011",
+      "strategy": "AL_PCA",
+      "classical_detected": true,
+      "classical_latency": 11,
+      "agentic_detected": true,
+      "agentic_latency": 3,
+      "agentic_failures": 0
+    },
+    "quant_meltdown_2007__JT_MOM": {
+      "window": "quant_meltdown_2007",
+      "strategy": "JT_MOM",
+      "classical_detected": true,
+      "classical_latency": 7,
+      "agentic_detected": true,
+      "agentic_latency": 4,
+      "agentic_failures": 0
+    },
+    "gfc_lehman_2008__JT_MOM": {
+      "window": "gfc_lehman_2008",
+      "strategy": "JT_MOM",
+      "classical_detected": false,
+      "classical_latency": null,
+      "agentic_detected": true,
+      "agentic_latency": 1,
+      "agentic_failures": 0
+    },
+    "momentum_crash_2009__JT_MOM": {
+      "window": "momentum_crash_2009",
+      "strategy": "JT_MOM",
+      "classical_detected": false,
+      "classical_latency": null,
+      "agentic_detected": true,
+      "agentic_latency": 1,
+      "agentic_failures": 0
+    },
+    "downgrade_2011__JT_MOM": {
+      "window": "downgrade_2011",
+      "strategy": "JT_MOM",
+      "classical_detected": true,
+      "classical_latency": 7,
+      "agentic_detected": true,
+      "agentic_latency": 5,
+      "agentic_failures": 0
+    }
+  },
+  "tests": {
+    "mcnemar": {
+      "n": 8,
+      "a": 6,
+      "b": 0,
+      "c": 2,
+      "d": 0,
+      "p_value": 0.5
+    },
+    "permutation_latency": {
+      "observed_diff_mean": -9.375,
+      "p_value_one_sided": 0.00390625,
+      "p_value": 0.0078125,
+      "n_pairs": 8,
+      "n_permutations": 256,
+      "censor_at": 21
+    },
+    "bayesian_recall": {
+      "classical_mean": 0.7226,
+      "agentic_mean": 0.944,
+      "classical_ci95": [
+        0.412,
+        0.9443
+      ],
+      "agentic_ci95": [
+        0.7377,
+        0.9999
+      ],
+      "p_agentic_better": 0.936,
+      "prior": {
+        "alpha": 0.5,
+        "beta": 0.5
+      },
+      "n_samples": 100000
+    },
+    "holm": {
+      "latency": {
+        "raw_p": 0.0078,
+        "adjusted_p": 0.0156,
+        "reject_005": true,
+        "rank": 1
+      },
+      "fpr": {
+        "raw_p": 0.5158,
+        "adjusted_p": 0.5158,
+        "reject_005": false,
+        "rank": 2
+      }
+    }
+  },
+  "missing_event_windows": []
+}

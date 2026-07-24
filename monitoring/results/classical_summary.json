@@ -164,8 +164,8 @@
       },
       "hmm": {
         "recall": 1.0,
-        "precision": 0.11764705882352941,
-        "mean_latency_days": 10.75,
+        "precision": 0.14285714285714285,
+        "mean_latency_days": 8.25,
         "false_positive_rate": 0.018282988871224166,
         "n_events": 4,
         "n_detected": 4,
@@ -195,10 +195,10 @@
           {
             "window": "momentum_crash_2009",
             "kind": "event",
-            "n_alarms": 4,
+            "n_alarms": 5,
             "detected": true,
-            "latency_days": 11,
-            "n_true_positives": 1,
+            "latency_days": 1,
+            "n_true_positives": 2,
             "n_false_positives": 3,
             "n_trading_days": 72,
             "fpr": null
@@ -556,20 +556,20 @@
         ]
       },
       "hmm": {
-        "recall": 0.25,
-        "precision": 0.16666666666666666,
-        "mean_latency_days": 11.0,
-        "false_positive_rate": 0.0007942811755361397,
+        "recall": 0.5,
+        "precision": 0.25,
+        "mean_latency_days": 7.0,
+        "false_positive_rate": 0.003971405877680699,
         "n_events": 4,
-        "n_detected": 1,
+        "n_detected": 2,
         "per_window": [
           {
             "window": "quant_meltdown_2007",
             "kind": "event",
-            "n_alarms": 0,
-            "detected": false,
-            "latency_days": null,
-            "n_true_positives": 0,
+            "n_alarms": 1,
+            "detected": true,
+            "latency_days": 7,
+            "n_true_positives": 1,
             "n_false_positives": 0,
             "n_trading_days": 44,
             "fpr": null
@@ -577,22 +577,22 @@
           {
             "window": "gfc_lehman_2008",
             "kind": "event",
-            "n_alarms": 1,
+            "n_alarms": 0,
             "detected": false,
             "latency_days": null,
             "n_true_positives": 0,
-            "n_false_positives": 1,
+            "n_false_positives": 0,
             "n_trading_days": 74,
             "fpr": null
           },
           {
             "window": "momentum_crash_2009",
             "kind": "event",
-            "n_alarms": 2,
+            "n_alarms": 0,
             "detected": false,
             "latency_days": null,
             "n_true_positives": 0,
-            "n_false_positives": 2,
+            "n_false_positives": 0,
             "n_trading_days": 72,
             "fpr": null
           },
@@ -601,7 +601,7 @@
             "kind": "event",
             "n_alarms": 2,
             "detected": true,
-            "latency_days": 11,
+            "latency_days": 7,
             "n_true_positives": 1,
             "n_false_positives": 1,
             "n_trading_days": 64,
@@ -610,24 +610,24 @@
           {
             "window": "calm_2004_2006",
             "kind": "calm",
+            "n_alarms": 4,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 4,
+            "n_trading_days": 755,
+            "fpr": 0.005298013245033113
+          },
+          {
+            "window": "calm_2013_2014",
+            "kind": "calm",
             "n_alarms": 1,
             "detected": null,
             "latency_days": null,
             "n_true_positives": 0,
             "n_false_positives": 1,
-            "n_trading_days": 755,
-            "fpr": 0.0013245033112582781
-          },
-          {
-            "window": "calm_2013_2014",
-            "kind": "calm",
-            "n_alarms": 0,
-            "detected": null,
-            "latency_days": null,
-            "n_true_positives": 0,
-            "n_false_positives": 0,
             "n_trading_days": 504,
-            "fpr": 0.0
+            "fpr": 0.001984126984126984
           }
         ]
       },
@@ -708,20 +708,20 @@
         ]
       },
       "aggregate": {
-        "recall": 0.25,
-        "precision": 0.25,
-        "mean_latency_days": 11.0,
-        "false_positive_rate": 0.0015885623510722795,
+        "recall": 0.5,
+        "precision": 0.2857142857142857,
+        "mean_latency_days": 9.0,
+        "false_positive_rate": 0.003971405877680699,
         "n_events": 4,
-        "n_detected": 1,
+        "n_detected": 2,
         "per_window": [
           {
             "window": "quant_meltdown_2007",
             "kind": "event",
-            "n_alarms": 0,
-            "detected": false,
-            "latency_days": null,
-            "n_true_positives": 0,
+            "n_alarms": 1,
+            "detected": true,
+            "latency_days": 7,
+            "n_true_positives": 1,
             "n_false_positives": 0,
             "n_trading_days": 44,
             "fpr": null
@@ -740,11 +740,11 @@
           {
             "window": "momentum_crash_2009",
             "kind": "event",
-            "n_alarms": 1,
+            "n_alarms": 0,
             "detected": false,
             "latency_days": null,
             "n_true_positives": 0,
-            "n_false_positives": 1,
+            "n_false_positives": 0,
             "n_trading_days": 72,
             "fpr": null
           },
@@ -762,13 +762,13 @@
           {
             "window": "calm_2004_2006",
             "kind": "calm",
-            "n_alarms": 1,
+            "n_alarms": 4,
             "detected": null,
             "latency_days": null,
             "n_true_positives": 0,
-            "n_false_positives": 1,
+            "n_false_positives": 4,
             "n_trading_days": 755,
-            "fpr": 0.0013245033112582781
+            "fpr": 0.005298013245033113
           },
           {
             "window": "calm_2013_2014",

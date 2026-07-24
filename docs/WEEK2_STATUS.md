@@ -31,6 +31,8 @@ Tests: **62** in `monitoring/` + **13** new in `XSectional/` (6 daily-backtest,
   alarms on MAP-run-length collapse.
 - **HMM** — 2-state Gaussian HMM (Baum-Welch fit, causal forward filter); stressed =
   higher-variance state. Supports an explicit historical `train_returns` for strict parity.
+  `run_classical.py` now passes a pre-2007 training series (calm_2004_2006 for AL PCA,
+  2001-2006 for JT) so all four event-window results are out-of-sample (Week-4 fix).
 - **Distributional threshold** — recent-vs-baseline z-score + volatility-ratio (scale-free).
 
 ## Evaluation design
@@ -147,7 +149,9 @@ for AL and 8.9%→68% (7.7×) for JT — large, detectable signatures in both bo
 1. **Per-strategy detector calibration**: several detectors have low precision (BOCPD both
    strategies; distributional on JT) and PH/HMM miss events on one strategy each. Tune
    per-strategy: `delta`/`lambda_` (PH), `hazard`/`min_run` (BOCPD), stressed-state
-   `threshold` (HMM). Consider fitting HMM on an explicit historical training span.
+   `threshold` (HMM). ~~Consider fitting HMM on an explicit historical training span.~~
+   **Done (Week-4)**: `run_classical.py` now passes pre-2007 training data to `HMMDetector`
+   (calm_2004_2006 for AL PCA, 2001-2006 for JT) — all four event-window results are OOS.
    **Caution — no in-sample tuning:** parameters must NOT be optimised against the same
    six windows used for the Week-5 evaluation (that would inflate the classical baseline
    and bias H1). Acceptable protocols: fix defaults a priori from synthetic calibration

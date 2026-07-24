@@ -178,11 +178,11 @@ class OllamaModel(LocalModel):
     server-side, so the response is guaranteed to have the schema's shape.
     """
 
-    def __init__(self, model: str = "qwen2.5:3b", host: str = "http://localhost:11434",
-                 temperature: float = 0.0, timeout: float = 600.0,
+    def __init__(self, model: str = "qwen2.5:1.5b", host: str = "http://localhost:11434",
+                 temperature: float = 0.0, timeout: float = 1800.0,
                  json_schema: dict | None = None):
-        # 600 s: CPU inference on a 3B model with ~4k-token news prompts routinely
-        # exceeds shorter timeouts, especially on the first call (model load).
+        # 1800 s: GFC/mc09 windows have 5-8k risk articles; combined news+supervisor
+        # prompts on those days can cause slow inference when GPU drops to Eco mode.
         self.model = model
         self.host = host.rstrip("/")
         self.temperature = temperature
@@ -206,28 +206,38 @@ class OllamaModel(LocalModel):
             data=json.dumps(payload).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            body = json.loads(resp.read().decode())
-        return self._extract_json(body.get("response", ""))
+        # Retry once on malformed JSON (small models sometimes emit garbage on
+        # very long prompts).
+        for attempt in range(2):
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                body = json.loads(resp.read().decode())
+            try:
+                return self._extract_json(body.get("response", ""))
+            except (json.JSONDecodeError, ValueError):
+                if attempt == 0:
+                    continue
+                raise
 
 
 def default_model(spec: str | None = None) -> LocalModel:
     """Build a LocalModel from a spec string.
 
-    Specs: "stub" | "ollama" (qwen2.5:3b) | "ollama:<model-name>" — everything after
-    the first colon is the model name, so tags work naturally (e.g.
-    "ollama:llama3.2:3b"). Falls back to the MONITOR_MODEL env var, then to the
+    Specs: "stub" | "ollama" (qwen2.5:1.5b) | "ollama:<model-name>" — everything
+    after the first colon is the model name, so tags work naturally (e.g.
+    "ollama:qwen2.5:1.5b"). Falls back to the MONITOR_MODEL env var, then to the
     offline stub, so tests and CI never require a running Ollama server.
+
+    Default Ollama model is ``qwen2.5:1.5b`` (preregistration §6.2).
     """
     spec = spec or os.environ.get("MONITOR_MODEL", "stub")
     if spec in ("stub", "offline"):
         return OfflineStubModel()
     if spec == "ollama":
-        return OllamaModel()
+        return OllamaModel(model="qwen2.5:1.5b")
     if spec.startswith("ollama:"):
         name = spec.split(":", 1)[1]
         if not name:
-            raise ValueError("empty ollama model name; expected e.g. 'ollama:llama3.2:3b'")
+            raise ValueError("empty ollama model name; expected e.g. 'ollama:qwen2.5:1.5b'")
         return OllamaModel(model=name)
     raise ValueError(f"unknown model spec {spec!r}; use 'stub', 'ollama', or 'ollama:<name>'")
 

@@ -50,8 +50,31 @@ STRATEGY_CURVES = {
 }
 
 
-def _new_detectors():
-    return [PageHinkley(), BOCPD(), HMMDetector(), DistributionalThreshold()]
+def _hmm_training_returns(curve_paths) -> "pd.Series | None":
+    """Load a pre-event training series for the HMM (returns before 2007-01-01).
+
+    For AL_PCA this resolves to the calm_2004_2006 curve (~750 obs); for JT_MOM
+    it slices the full curve to 2001-2006 (~1,450 obs). Both predate all four
+    event windows, so HMM parameters are estimated out-of-sample for every
+    detection test. The calm_2004_2006 *evaluation* window is in-sample for
+    AL_PCA HMM — a documented trade-off: the parameters are fit on calm-only
+    data, so the stressed-regime parameters are still estimated from evaluation
+    data when that curve is used. All four event windows remain fully OOS.
+    """
+    TRAIN_END = pd.Timestamp("2006-12-31")
+    for path in curve_paths:
+        if not Path(path).exists():
+            continue
+        series = returns_series(load_pnl(path))
+        pre = series.loc[:TRAIN_END]
+        if len(pre) >= 120:  # HMM min_samples default
+            return pre
+    return None  # fallback: in-sample (documented)
+
+
+def _new_detectors(train_returns=None):
+    return [PageHinkley(), BOCPD(), HMMDetector(train_returns=train_returns),
+            DistributionalThreshold()]
 
 
 def _windows_in_curve(series: pd.Series, end_tol_days: int = 7):
@@ -78,6 +101,9 @@ def run_strategy(name: str, curve_paths, agent_logger: RunLogger | None,
     per_detector: dict[str, list[WindowMetrics]] = {}
     covered: set[str] = set()
 
+    # Fit HMM on pre-event data (out-of-sample for all four event windows).
+    hmm_train = _hmm_training_returns(curve_paths)
+
     for path in curve_paths:
         if not Path(path).exists():
             continue
@@ -86,7 +112,7 @@ def run_strategy(name: str, curve_paths, agent_logger: RunLogger | None,
         if not windows:
             continue
 
-        detectors = _new_detectors()
+        detectors = _new_detectors(train_returns=hmm_train)
         results = [d.detect(series) for d in detectors]
         alarms_by_det = {r.detector: r.alarms for r in results}
         alarms_by_det["aggregate"] = aggregate_alarms(results, window_days=5, min_detectors=2)

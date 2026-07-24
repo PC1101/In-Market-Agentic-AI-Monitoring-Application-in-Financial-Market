@@ -16,7 +16,8 @@ new end-to-end driver `monitoring/run_agentic.py`.
 | Local model integration (real LLM, not stub) | ✅ | Ollama + qwen2.5:3b via `agentic/model.py` (`default_model`) |
 | End-to-end agentic run on Aug-2007 with valid JSON | ✅ | `run_agentic.py` — see Run results below |
 
-Tests: **103** in `monitoring/` + **53** in `XSectional/` — all passing.
+Tests: **~109** collected by pytest in `monitoring/` (99 function definitions + ~10 extra
+parametrized expansions via `@pytest.mark.parametrize`) + **53** in `XSectional/` — all passing.
 The offline stub (`OfflineStubModel`) remains the CI model; no test needs Ollama.
 
 ## News coverage (the Week-3 data gate)

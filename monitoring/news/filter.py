@@ -39,6 +39,40 @@ RISK_PATTERNS: list[tuple[str, str]] = [
 
 _COMPILED = [(label, re.compile(pat, re.IGNORECASE)) for label, pat in RISK_PATTERNS]
 
+#: Matches any Cyrillic character (pre-2009 FNSPID is ~26% Russian Lenta.ru content).
+_CYRILLIC = re.compile(r"[\u0400-\u04FF]")
+
+
+def is_non_english(text: str, threshold: float = 0.3) -> bool:
+    """True if more than ``threshold`` fraction of alphabetic chars are Cyrillic.
+
+    Used to detect pre-2009 Russian articles that were scraped into FNSPID along
+    with English financial news. The English risk lexicon produces zero hits on
+    Cyrillic text, so these rows are harmless to precision but bloat the corpus
+    and distort article-count metrics.
+    """
+    if not isinstance(text, str) or not text:
+        return False
+    alpha = [c for c in text if c.isalpha()]
+    if len(alpha) < 5:
+        return False
+    cyrillic = sum(1 for c in alpha if _CYRILLIC.match(c))
+    return cyrillic / len(alpha) > threshold
+
+
+def filter_non_english(df: pd.DataFrame,
+                       text_cols: tuple[str, ...] = ("title", "summary")) -> pd.DataFrame:
+    """Drop rows where the concatenated text is predominantly non-English (Cyrillic).
+
+    Call this before ``filter_news`` to reduce noise from pre-2009 Russian scrape.
+    The filter is opt-in — existing callers are unaffected.
+    """
+    if df.empty:
+        return df
+    joined = df[list(text_cols)].fillna("").agg(" ".join, axis=1)
+    mask = ~joined.map(is_non_english)
+    return df[mask].reset_index(drop=True)
+
 
 def score_text(text: str) -> list[str]:
     """Return the distinct risk-term labels matched in ``text``."""
