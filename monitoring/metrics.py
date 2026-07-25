@@ -38,7 +38,8 @@ class WindowMetrics:
 
 
 def evaluate_window(alarms, window: Window, tolerance_days: int = 21,
-                    n_trading_days: int | None = None) -> WindowMetrics:
+                    n_trading_days: int | None = None,
+                    override_onset: "pd.Timestamp | None" = None) -> WindowMetrics:
     """Score a detector's alarms for a single window.
 
     Args:
@@ -60,7 +61,7 @@ def evaluate_window(alarms, window: Window, tolerance_days: int = 21,
         ))
 
     if window.kind == "event":
-        onset = window.onset_ts
+        onset = override_onset if override_onset is not None else window.onset_ts
         zone_end = onset + pd.Timedelta(days=tolerance_days)
         in_zone = [a for a in in_window if onset <= a <= zone_end]
         detected = len(in_zone) > 0

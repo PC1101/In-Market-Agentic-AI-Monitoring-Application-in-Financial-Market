@@ -4,7 +4,7 @@ import json
 import numpy as np
 import pandas as pd
 
-from run_agentic import run_window
+from run_agentic import run_window, _log_run_meta
 from agentic.model import OfflineStubModel
 from agentic.logging_utils import RunLogger
 from agentic.schemas import validate_assessment
@@ -35,6 +35,22 @@ def _synthetic(tmp_path):
                     start=str(dates[140].date()), end=str(dates[-1].date()),
                     onset=str(dates[150].date()), description="synthetic crash")
     return series, NewsStore(tmp_path / "store"), window
+
+
+def test_run_meta_header_structure(tmp_path):
+    logger = RunLogger(tmp_path / "meta_test.jsonl")
+    _log_run_meta(logger, model_name="stub", curve="/some/path.csv",
+                  window="quant_meltdown_2007", strategy="AL_PCA", condition="A")
+    lines = (tmp_path / "meta_test.jsonl").read_text().splitlines()
+    assert len(lines) == 1
+    record = json.loads(lines[0])
+    assert record["agent"] == "run_meta"
+    assert record["model"] == "stub"
+    assert record["curve"] == "/some/path.csv"
+    assert record["window"] == "quant_meltdown_2007"
+    assert record["strategy"] == "AL_PCA"
+    assert record["condition"] == "A"
+    assert "git_sha" in record  # value may be "unknown" in CI; just check key exists
 
 
 def test_run_window_end_to_end_stub(tmp_path):

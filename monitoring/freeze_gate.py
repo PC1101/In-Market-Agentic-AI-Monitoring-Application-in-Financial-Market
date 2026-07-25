@@ -192,6 +192,29 @@ def check_window_partition() -> dict:
         return {"passed": False, "detail": str(e)}
 
 
+def check_onset_module_importable() -> dict:
+    try:
+        from onset import curve_onset
+        if not callable(curve_onset):
+            return {"passed": False, "detail": "curve_onset is not callable"}
+        return {"passed": True, "detail": "onset.curve_onset importable and callable"}
+    except ImportError as e:
+        return {"passed": False, "detail": str(e)}
+
+
+def check_onset_sensitivity_in_dev_analysis() -> dict:
+    path = RESULTS / "dev_analysis.json"
+    if not path.exists():
+        return {"passed": False, "detail": f"dev_analysis.json not found at {path}"}
+    try:
+        data = json.loads(path.read_text())
+        if "onset_sensitivity" not in data:
+            return {"passed": False, "detail": "onset_sensitivity key missing from dev_analysis.json"}
+        return {"passed": True, "detail": "onset_sensitivity present in dev_analysis.json"}
+    except Exception as e:
+        return {"passed": False, "detail": f"error reading dev_analysis.json: {e}"}
+
+
 def check_no_test_results_exist() -> dict:
     """Ensure no test-window result files exist before the freeze tag."""
     found = []
@@ -213,6 +236,8 @@ def check_freeze_readiness() -> dict:
         ("significance.py importable", check_significance_importable),
         ("leakage harness importable", check_leakage_importable),
         ("alarm_extraction importable", check_alarm_extraction_importable),
+        ("onset module importable", check_onset_module_importable),
+        ("onset_sensitivity in dev_analysis.json", check_onset_sensitivity_in_dev_analysis),
         ("calibration_grid.json exists", check_calibration_grid_exists),
         ("prompt versions match §6.2", check_prompt_versions),
         ("triage constants match §6.2", check_triage_constants),

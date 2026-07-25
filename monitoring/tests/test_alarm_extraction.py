@@ -224,3 +224,38 @@ def test_reconstruct_zero_runtime_failures_with_valid_assessment():
 
 def test_reconstruct_empty_input():
     assert reconstruct_day_records([]) == []
+
+
+# ---------------------------------------------------------------------------
+# evaluate_agentic_window — override_onset
+# ---------------------------------------------------------------------------
+
+def test_override_onset_shifts_agentic_latency():
+    w = get_window("flash_crash_2010")  # onset 2010-05-06
+    trading = pd.bdate_range(w.start_ts, w.end_ts)
+
+    # Alarm 3 days after hardcoded onset → latency=3
+    alarm_date = pd.Timestamp("2010-05-11")
+    records = [_make_record(str(alarm_date.date()), "ALERT")]
+
+    m_default = evaluate_agentic_window(records, w, trading)
+    assert m_default.latency_days == int((alarm_date - w.onset_ts).days)
+
+    # Override onset 2 days later → latency increases by 2 (alarm is 1 day after new onset? no: 2010-05-06 + 2 = 2010-05-10 + 1 day = 2010-05-11, so latency = 1)
+    override = pd.Timestamp("2010-05-10")
+    m_override = evaluate_agentic_window(records, w, trading, override_onset=override)
+    expected_lat = int((alarm_date - override).days)
+    assert m_override.latency_days == expected_lat
+    assert m_override.detected is True
+
+
+def test_override_onset_none_reproduces_default():
+    w = get_window("flash_crash_2010")
+    trading = pd.bdate_range(w.start_ts, w.end_ts)
+    records = [_make_record(str(w.onset_ts.date()), "ALERT")]
+
+    m_default = evaluate_agentic_window(records, w, trading)
+    m_none = evaluate_agentic_window(records, w, trading, override_onset=None)
+
+    assert m_default.detected == m_none.detected
+    assert m_default.latency_days == m_none.latency_days

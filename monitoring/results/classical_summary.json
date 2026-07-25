@@ -9,6 +9,10 @@
       "momentum_crash_2009",
       "quant_meltdown_2007"
     ],
+    "curves": [
+      "C:\\Users\\dungh\\Downloads\\In-Market-Agentic-AI-Monitoring-Application-in-Financial-Market\\Stat Arb\\statsArb-dev\\results\\full_universe\\baseline_2007_2015_pit\\equity_curve.csv",
+      "C:\\Users\\dungh\\Downloads\\In-Market-Agentic-AI-Monitoring-Application-in-Financial-Market\\Stat Arb\\statsArb-dev\\results\\full_universe\\calm_2004_2006_pit\\equity_curve.csv"
+    ],
     "detectors": {
       "page_hinkley": {
         "recall": 0.25,
@@ -401,6 +405,9 @@
       "gfc_lehman_2008",
       "momentum_crash_2009",
       "quant_meltdown_2007"
+    ],
+    "curves": [
+      "C:\\Users\\dungh\\Downloads\\In-Market-Agentic-AI-Monitoring-Application-in-Financial-Market\\XSectional\\results\\equity_curve_daily.csv"
     ],
     "detectors": {
       "page_hinkley": {

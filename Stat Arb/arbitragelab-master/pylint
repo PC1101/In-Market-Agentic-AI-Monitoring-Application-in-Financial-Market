@@ -1,2 +1,0 @@
-#!/bin/bash
-pylint arbitragelab --rcfile=.pylintrc -f text

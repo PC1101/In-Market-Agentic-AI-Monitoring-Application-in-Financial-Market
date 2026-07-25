@@ -17,7 +17,7 @@
       "classical_latency": 14,
       "agentic_detected": true,
       "agentic_latency": 0,
-      "agentic_failures": 12
+      "agentic_failures": 0
     },
     "momentum_crash_2009__AL_PCA": {
       "window": "momentum_crash_2009",
@@ -26,7 +26,7 @@
       "classical_latency": 1,
       "agentic_detected": true,
       "agentic_latency": 0,
-      "agentic_failures": 33
+      "agentic_failures": 0
     },
     "downgrade_2011__AL_PCA": {
       "window": "downgrade_2011",
@@ -34,8 +34,8 @@
       "classical_detected": true,
       "classical_latency": 11,
       "agentic_detected": true,
-      "agentic_latency": 5,
-      "agentic_failures": 33
+      "agentic_latency": 3,
+      "agentic_failures": 0
     },
     "quant_meltdown_2007__JT_MOM": {
       "window": "quant_meltdown_2007",
@@ -43,7 +43,7 @@
       "classical_detected": true,
       "classical_latency": 7,
       "agentic_detected": true,
-      "agentic_latency": 0,
+      "agentic_latency": 4,
       "agentic_failures": 0
     },
     "gfc_lehman_2008__JT_MOM": {
@@ -52,8 +52,8 @@
       "classical_detected": false,
       "classical_latency": null,
       "agentic_detected": true,
-      "agentic_latency": 2,
-      "agentic_failures": 37
+      "agentic_latency": 1,
+      "agentic_failures": 0
     },
     "momentum_crash_2009__JT_MOM": {
       "window": "momentum_crash_2009",
@@ -62,7 +62,7 @@
       "classical_latency": null,
       "agentic_detected": true,
       "agentic_latency": 1,
-      "agentic_failures": 20
+      "agentic_failures": 0
     },
     "downgrade_2011__JT_MOM": {
       "window": "downgrade_2011",
@@ -70,8 +70,8 @@
       "classical_detected": true,
       "classical_latency": 7,
       "agentic_detected": true,
-      "agentic_latency": 3,
-      "agentic_failures": 14
+      "agentic_latency": 5,
+      "agentic_failures": 0
     }
   },
   "tests": {
@@ -84,7 +84,7 @@
       "p_value": 0.5
     },
     "permutation_latency": {
-      "observed_diff_mean": -9.75,
+      "observed_diff_mean": -9.375,
       "p_value_one_sided": 0.00390625,
       "p_value": 0.0078125,
       "n_pairs": 8,
@@ -198,39 +198,39 @@
         "curve_onset": "2011-08-31",
         "onset_shift_days": 26,
         "classical_latency_adj": null,
-        "agentic_latency_adj": 6
+        "agentic_latency_adj": 19
       },
       "quant_meltdown_2007__JT_MOM": {
         "hardcoded_onset": "2007-08-06",
         "curve_onset": "2007-08-06",
         "onset_shift_days": 0,
         "classical_latency_adj": 7,
-        "agentic_latency_adj": 0
+        "agentic_latency_adj": 4
       },
       "gfc_lehman_2008__JT_MOM": {
         "hardcoded_onset": "2008-09-15",
         "curve_onset": "2008-08-21",
         "onset_shift_days": -25,
         "classical_latency_adj": null,
-        "agentic_latency_adj": 5
+        "agentic_latency_adj": 0
       },
       "momentum_crash_2009__JT_MOM": {
         "hardcoded_onset": "2009-03-09",
         "curve_onset": "2009-03-06",
         "onset_shift_days": -3,
         "classical_latency_adj": null,
-        "agentic_latency_adj": 4
+        "agentic_latency_adj": 0
       },
       "downgrade_2011__JT_MOM": {
         "hardcoded_onset": "2011-08-05",
         "curve_onset": "2011-07-19",
         "onset_shift_days": -17,
         "classical_latency_adj": null,
-        "agentic_latency_adj": 8
+        "agentic_latency_adj": 1
       }
     },
     "permutation_latency": {
-      "observed_diff_mean": -16.375,
+      "observed_diff_mean": -16.25,
       "p_value_one_sided": 0.00390625,
       "p_value": 0.0078125,
       "n_pairs": 8,

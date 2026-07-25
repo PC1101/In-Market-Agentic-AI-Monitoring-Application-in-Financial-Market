@@ -33,7 +33,10 @@ from .schemas import State, Action
 
 def _extract_as_of(text: str) -> str:
     """Pull the ``as_of`` date out of a rendered user prompt (shared by the
-    supervisor and news-mode branches of ``OfflineStubModel``)."""
+    supervisor and news-mode branches of ``OfflineStubModel``).
+    Returns the Condition-B masked sentinel when found."""
+    if "XXXX-XX-XX" in text:
+        return "XXXX-XX-XX"
     m = re.search(r"as_of\):\s*([0-9-]+)", text)
     return m.group(1) if m else ""
 

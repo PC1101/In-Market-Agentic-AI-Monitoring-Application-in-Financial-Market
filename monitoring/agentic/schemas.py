@@ -201,10 +201,11 @@ def validate_news_flags(obj: dict) -> NewsFlags:
     if not (0.0 <= float(conf) <= 1.0):
         raise SchemaError(f"confidence {conf} out of range [0, 1]")
 
-    try:
-        date.fromisoformat(obj["as_of"])
-    except (ValueError, TypeError):
-        raise SchemaError(f"as_of must be an ISO date, got {obj['as_of']!r}")
+    if obj["as_of"] != "XXXX-XX-XX":  # allow Condition-B masked sentinel
+        try:
+            date.fromisoformat(obj["as_of"])
+        except (ValueError, TypeError):
+            raise SchemaError(f"as_of must be an ISO date, got {obj['as_of']!r}")
 
     n_articles = obj.get("n_articles", 0)
     if not isinstance(n_articles, int) or isinstance(n_articles, bool) or n_articles < 0:

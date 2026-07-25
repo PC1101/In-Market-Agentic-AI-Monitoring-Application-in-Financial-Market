@@ -115,6 +115,7 @@ def evaluate_agentic_window(
     trading_dates: pd.DatetimeIndex,
     tolerance_days: int = 21,
     dedup_days: int = 5,
+    override_onset: "pd.Timestamp | None" = None,
 ) -> "AgenticWindowMetrics":
     """Score agentic performance on one evaluation window.
 
@@ -142,7 +143,7 @@ def evaluate_agentic_window(
     n_failures = sum(1 for r in window_records if _is_runtime_failure(r))
 
     if window.kind == "event":
-        onset = window.onset_ts
+        onset = override_onset if override_onset is not None else window.onset_ts
         zone_end = onset + pd.Timedelta(days=tolerance_days)
         in_zone = [a for a in alarm_days if onset <= a <= zone_end]
         detected = len(in_zone) > 0

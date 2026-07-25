@@ -43,6 +43,8 @@ def _prefer_pit(tag: str):
 # Each strategy is a list of continuous daily PnL curves.
 STRATEGY_CURVES = {
     "AL_PCA": [
+        # baseline_2007_2016_pit not built (PIT sleeves absent; china_deval_2015 + later
+        # test windows are JT_MOM-only — documented limitation in D1_audit_report.md).
         _prefer_pit("baseline_2007_2015"),
         _prefer_pit("calm_2004_2006"),
     ],
@@ -199,7 +201,12 @@ def main():
                 "n_events": h.n_events, "n_detected": h.n_detected,
                 "per_window": [asdict(m) for m in h.per_window],
             }
-        summary[strat] = {"status": "ok", "covered": sorted(covered), "detectors": strat_out}
+        summary[strat] = {
+            "status": "ok",
+            "covered": sorted(covered),
+            "curves": [str(p) for p in paths if Path(p).exists()],
+            "detectors": strat_out,
+        }
 
     (RESULTS / "classical_summary.json").write_text(json.dumps(summary, indent=2, default=str))
     print(f"\nWrote {RESULTS / 'classical_summary.json'}")

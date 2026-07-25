@@ -75,8 +75,13 @@ def assert_no_lookahead(context: dict, as_of) -> None:
     """Verify no date anywhere in ``context`` exceeds ``as_of``.
 
     Recursively scans strings that parse as ISO dates and any pandas Timestamps.
+    When ``as_of`` is the Condition-B masked sentinel ("XXXX-XX-XX"), the check
+    is a no-op: the caller has already date-masked the context.
     """
-    as_of = pd.Timestamp(as_of)
+    try:
+        as_of = pd.Timestamp(as_of)
+    except (ValueError, TypeError):
+        return  # masked sentinel — no lookahead possible by construction
 
     def _scan(node, path="context"):
         if isinstance(node, dict):
@@ -121,11 +126,16 @@ def filter_news_by_timestamp(records, as_of, ts_field: str = "timestamp") -> lis
         List of records with ts_field <= as_of. Records missing/with unparseable
         timestamps are dropped (fail-closed — never leak an undated item forward).
     """
-    as_of = pd.Timestamp(as_of)
+    try:
+        as_of_ts = pd.Timestamp(as_of)
+    except (ValueError, TypeError):
+        # as_of is the masked sentinel (e.g. "XXXX-XX-XX") — Condition B date-masking.
+        # Content is already date-masked by the caller; return all records.
+        return list(records)
     kept = []
     for r in records:
         ts = _try_date(str(r.get(ts_field, "")))
-        if ts is not None and ts <= as_of:
+        if ts is not None and ts <= as_of_ts:
             kept.append(r)
     return kept
 
@@ -137,12 +147,16 @@ def scrub_future_dated(records, as_of, text_fields=("title", "summary")) -> list
     subtler leak of an on-time article whose body references a future scheduled date
     (fail-closed: the whole record is dropped, mirroring assert_no_lookahead's scan).
     """
-    as_of = pd.Timestamp(as_of)
+    try:
+        as_of_ts = pd.Timestamp(as_of)
+    except (ValueError, TypeError):
+        # Masked sentinel — articles already date-scrubbed by caller; nothing to drop.
+        return list(records)
     kept = []
     for r in records:
         text = " ".join(str(r.get(f, "")) for f in text_fields)
         future = any(
-            (ts := _try_date(m)) is not None and ts > as_of
+            (ts := _try_date(m)) is not None and ts > as_of_ts
             for m in _ISO_DATE_RE.findall(text)
         )
         if not future:

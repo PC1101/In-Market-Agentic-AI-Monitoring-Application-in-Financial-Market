@@ -1,0 +1,35 @@
+{
+  "strategy": "AL_PCA",
+  "model": "offline-stub",
+  "windows": {
+    "quant_meltdown_2007": {
+      "A": {
+        "detected": true,
+        "latency_days": 0,
+        "n_false_positives": 28,
+        "n_runtime_failures": 0
+      },
+      "B": {
+        "detected": false,
+        "latency_days": null,
+        "n_false_positives": 0,
+        "n_runtime_failures": 44
+      },
+      "C": {
+        "recall_mean": 0.3333,
+        "recall_std": 0.4714,
+        "mean_latency": 14.0,
+        "n_windows": 3,
+        "n_detected": 1
+      },
+      "leakage_bound": {
+        "evidence_skill_lower_bound": 0.3333,
+        "memorisation_upper_bound": 1.0,
+        "perf_A": 1.0,
+        "perf_B": 0.0,
+        "perf_C_mean": 0.3333,
+        "conclusion": "inconclusive"
+      }
+    }
+  }
+}

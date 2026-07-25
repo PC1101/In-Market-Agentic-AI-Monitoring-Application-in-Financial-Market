@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import time
 from pathlib import Path
 
@@ -35,6 +36,25 @@ from news.filter import filter_news
 from news.aggregate import daily_signals
 from news.triage import decide, RECENT_DAYS, COVERAGE_DAYS
 from news.finbert import daily_max_stress
+
+def _git_sha() -> str:
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=5,
+            cwd=str(Path(__file__).parent),
+        ).stdout.strip() or "unknown"
+    except Exception:
+        return "unknown"
+
+
+def _log_run_meta(logger, model_name: str, curve: str, window: str,
+                  strategy: str, condition: str) -> None:
+    """Write the first JSONL line: run provenance (model, curve, git SHA)."""
+    logger.log({"agent": "run_meta", "model": model_name, "curve": curve,
+                "git_sha": _git_sha(), "window": window,
+                "strategy": strategy, "condition": condition})
+
 
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS = Path(__file__).resolve().parent / "results"
@@ -183,6 +203,7 @@ def main() -> None:
     if out.exists():
         out.unlink()
     logger = RunLogger(out)
+    _log_run_meta(logger, model.name, str(curve), args.window, args.strategy, args.condition)
 
     records = run_window(series, window, NewsStore(STORE_DIR), model, logger=logger,
                          strategy=args.strategy, condition=args.condition)

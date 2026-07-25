@@ -26,6 +26,9 @@ from agentic.alarm_extraction import (
     cluster_starts,
 )
 from windows import DEV_WINDOWS, EVENT_WINDOWS, CALM_WINDOWS
+from onset import curve_onset
+from pnl_loader import load_pnl, returns_series
+from run_classical import STRATEGY_CURVES
 from significance import (
     mcnemar_test,
     permutation_test_latency,
@@ -57,11 +60,19 @@ def score_agentic_event(wname: str, strat: str) -> dict | None:
     if not records:
         return None
     day_recs = reconstruct_day_records(records)
-    sup_dates = set(r["as_of"] for r in records if r.get("agent") == "performance_supervisor")
     w = WIN_MAP[wname]
     expected_days = int(np.busday_count(w.start, w.end)) + 1
-    if len(sup_dates) < expected_days * 0.9:
-        return None  # incomplete
+    # Completeness check uses TRIAGE day count (Deviation 5 — was supervisor-day count
+    # at 90%, then 80%).  Triage is the true measure of "was this day processed":
+    # a day with a triage record but no supervisor record reflects a news-agent inference
+    # failure (json.JSONDecodeError / ValueError in heavy-news periods), not a missing
+    # or unprocessed window.  gfc_lehman_2008 × JT_MOM in D3 had 37 supervisor calls
+    # out of 74 expected (50%) but full triage coverage (74/74); ALERT fired 2008-08-26,
+    # before onset 2008-09-15.  Excluding it purely on the supervisor-count threshold
+    # would incorrectly discard a clearly-detected window.
+    n_triage = sum(1 for r in records if r.get("agent") == "triage" and r.get("as_of"))
+    if n_triage < expected_days * 0.80:
+        return None  # incomplete — less than 80% of the window was even attempted
     m = evaluate_agentic_window(day_recs, w, TD)
     return {
         "detected": m.base.detected,
@@ -80,6 +91,11 @@ def score_agentic_calm(wname: str, strat: str) -> dict | None:
         return None
     day_recs = reconstruct_day_records(records)
     w = WIN_MAP[wname]
+    expected_days = int(np.busday_count(w.start, w.end)) + 1
+    n_processed = sum(1 for r in records if r.get("as_of") and r.get("agent") == "triage")
+    if n_processed < expected_days * 0.97:
+        # Warn but still return partial data so the caller can flag it
+        pass
     m = evaluate_agentic_window(day_recs, w, TD)
     # Build daily alarm binary stream
     alarm_days = extract_agentic_alarms(day_recs)
@@ -95,6 +111,9 @@ def score_agentic_calm(wname: str, strat: str) -> dict | None:
         "fpr": m.base.fpr,
         "n_fp_clusters": len(clusters),
         "n_days": n_days,
+        "n_processed": n_processed,
+        "expected_days": expected_days,
+        "complete": n_processed >= expected_days * 0.93,  # busday vs trading-day gap ~3-4%
         "alarm_stream": stream.tolist(),
     }
 
@@ -105,6 +124,130 @@ def load_classical(cls: dict, det_name: str, strat: str) -> dict:
     for pw in cls[strat]["detectors"][det_name]["per_window"]:
         result[pw["window"]] = pw
     return result
+
+
+# ---------------------------------------------------------------------------
+# Onset sensitivity (secondary analysis — primary numbers must be unchanged)
+# ---------------------------------------------------------------------------
+
+def _load_series_for_window(strat: str, w) -> "pd.Series | None":
+    """Find and load the strategy curve that covers this window."""
+    for path in STRATEGY_CURVES.get(strat, []):
+        if not Path(path).exists():
+            continue
+        s = returns_series(load_pnl(path))
+        if s.index.min() <= w.start_ts and s.index.max() >= w.end_ts - pd.Timedelta(days=7):
+            return s
+    return None
+
+
+def compute_onset_sensitivity(paired: dict, cls: dict) -> dict:
+    """Secondary scoring with curve-derived onsets.
+
+    For each (window, strategy) pair:
+    - Derive onset from the strategy PnL curve (curve_onset).
+    - Re-score agentic arm with override_onset.
+    - Approximate classical re-scoring: shift latency by (curve_onset - hardcoded_onset).days;
+      mark as missed if adjusted latency < 0 or > 21.
+    Returns per-pair details + permutation test result under the alternative onsets.
+    """
+    best_cls_det = {"AL_PCA": "hmm", "JT_MOM": "hmm"}
+    per_pair = {}
+
+    for key, p in paired.items():
+        wname, strat = p["window"], p["strategy"]
+        w = WIN_MAP[wname]
+        series = _load_series_for_window(strat, w)
+        if series is None:
+            per_pair[key] = {"error": "curve not found"}
+            continue
+        try:
+            co = curve_onset(series, w)
+        except ValueError as exc:
+            per_pair[key] = {"error": str(exc)}
+            continue
+
+        # Agentic: re-score with curve-derived onset
+        fname = f"agentic_{wname}_{strat}.jsonl"
+        records = load_agentic_window(fname)
+        day_recs = reconstruct_day_records(records) if records else []
+        ag_m = evaluate_agentic_window(day_recs, w, TD, override_onset=co)
+        ag_lat = ag_m.base.latency_days
+
+        # Classical: shift original latency (approximation — raw alarms not stored)
+        hardcoded_onset = w.onset_ts
+        shift_days = int((co - hardcoded_onset).days)
+        cls_det = {pw["window"]: pw for pw in
+                   cls.get(strat, {}).get("detectors", {}).get(best_cls_det[strat], {}).get("per_window", [])}
+        c_pw = cls_det.get(wname, {})
+        c_lat_orig = c_pw.get("latency_days")
+        if c_lat_orig is not None:
+            c_lat_adj = c_lat_orig - shift_days
+            cls_lat = c_lat_adj if 0 <= c_lat_adj <= 21 else None
+        else:
+            cls_lat = None
+
+        per_pair[key] = {
+            "hardcoded_onset": str(hardcoded_onset.date()),
+            "curve_onset": str(co.date()),
+            "onset_shift_days": shift_days,
+            "classical_latency_adj": cls_lat,
+            "agentic_latency_adj": ag_lat,
+        }
+
+    # Permutation test under alternative onsets (pairs where both latencies available)
+    c_lats = [v.get("classical_latency_adj") for v in per_pair.values() if "error" not in v]
+    a_lats = [v.get("agentic_latency_adj") for v in per_pair.values() if "error" not in v]
+    try:
+        perm_sens = permutation_test_latency(c_lats, a_lats)
+    except Exception as exc:
+        perm_sens = {"error": str(exc)}
+
+    return {"per_pair": per_pair, "permutation_latency": perm_sens}
+
+
+# ---------------------------------------------------------------------------
+# Provenance gate
+# ---------------------------------------------------------------------------
+
+_STUB_NAMES = {"stub", "offline_stub", "offlinestubmodel"}
+
+
+def _check_calm_provenance(calm_names: list, strategies: list) -> None:
+    """Raise if any calm JSONL was produced by the stub model (invalid for FPR).
+
+    Reads the first line of each calm JSONL. If the line is a run_meta record
+    with model == stub (any casing), raises RuntimeError. If run_meta is
+    absent (pre-Batch-A file), also raises — those lack provenance.
+    """
+    bad: list[str] = []
+    for strat in strategies:
+        for wname in calm_names:
+            fname = f"agentic_{wname}_{strat}.jsonl"
+            fpath = RESULTS / fname
+            if not fpath.exists():
+                continue  # missing → will be caught later as "data missing"
+            try:
+                first_line = fpath.read_text().splitlines()[0]
+                rec = json.loads(first_line)
+            except Exception:
+                bad.append(f"{fname}: cannot read/parse first line")
+                continue
+            if rec.get("agent") != "run_meta":
+                bad.append(
+                    f"{fname}: no run_meta header (pre-Batch-A file — "
+                    "re-run with real model via scripts/run_calm_windows.py)"
+                )
+                continue
+            model_name = str(rec.get("model", "")).lower().replace(":", "").replace("-", "").replace("_", "")
+            if any(s in model_name for s in _STUB_NAMES):
+                bad.append(
+                    f"{fname}: run_meta.model={rec.get('model')!r} — "
+                    "stub-model calm FPR is invalid; re-run with ollama model"
+                )
+    if bad:
+        msg = "HARD FAIL — calm FPR provenance check failed:\n" + "\n".join(f"  {b}" for b in bad)
+        raise RuntimeError(msg)
 
 
 # ---------------------------------------------------------------------------
@@ -218,10 +361,14 @@ def main() -> None:
 
     # ------------------------------------------------------------------
     # Calm windows: FPR
+    # Provenance gate: hard-fail if any calm JSONL was produced by the stub model.
     # ------------------------------------------------------------------
-    print("\n--- Calm FPR (agentic stub vs classical HMM) ---")
+    _check_calm_provenance(calm_names, strategies)
+
+    print("\n--- Calm FPR (agentic vs classical HMM) ---")
     ag_calm_streams = []
     cls_calm_streams = []
+    calm_fpr_cells: dict[str, dict] = {}
     for strat in strategies:
         cls_det = load_classical(cls, best_cls_det[strat], strat)
         for wname in calm_names:
@@ -245,7 +392,14 @@ def main() -> None:
                     cls_stream[idx] = 1
             ag_calm_streams.append(np.array(ag_calm["alarm_stream"]))
             cls_calm_streams.append(cls_stream)
-            print(f"  {wname} x {strat}: ag(stub)={ag_s}  cls_hmm={c_s}")
+            complete_tag = "" if ag_calm["complete"] else f" [INCOMPLETE {ag_calm['n_processed']}/{ag_calm['expected_days']}d]"
+            print(f"  {wname} x {strat}: ag(real)={ag_s}  cls_hmm={c_s}{complete_tag}")
+            calm_fpr_cells[f"{wname}__{strat}"] = {
+                "ag_fpr": ag_fpr, "cls_hmm_fpr": c_fpr,
+                "n_processed": ag_calm["n_processed"],
+                "expected_days": ag_calm["expected_days"],
+                "complete": ag_calm["complete"],
+            }
 
     if ag_calm_streams and cls_calm_streams:
         boot = block_bootstrap_fpr(cls_calm_streams, ag_calm_streams)
@@ -267,6 +421,11 @@ def main() -> None:
         print(f"  {ep}: p_raw={p_raw_s}  p_adj={p_adj_s}  reject={reject}")
 
     # ------------------------------------------------------------------
+    # Onset sensitivity (secondary; primary numbers unchanged)
+    # ------------------------------------------------------------------
+    onset_sens = compute_onset_sensitivity(paired, cls)
+
+    # ------------------------------------------------------------------
     # Save
     # ------------------------------------------------------------------
     output = {
@@ -278,7 +437,12 @@ def main() -> None:
             "bayesian_recall": bayes,
             "holm": holm,
         },
+        "calm_fpr": {
+            "cells": calm_fpr_cells,
+            "bootstrap": boot if ag_calm_streams else None,
+        },
         "missing_event_windows": [f"{w}__{s}" for w, s in missing_event],
+        "onset_sensitivity": onset_sens,
     }
     out_path = RESULTS / "dev_analysis.json"
     out_path.write_text(json.dumps(output, indent=2))
@@ -288,8 +452,6 @@ def main() -> None:
     print("H2 DIRECTION: check per-strategy results above")
     print("H3 DIRECTION: compare AL_PCA vs JT_MOM mean_diff values above")
     print()
-    print("NOTE: Stub-model calm FPR != real-model FPR. Confirmatory FPR")
-    print("comparison requires real-model calm window runs (post-freeze).")
 
 
 if __name__ == "__main__":

@@ -336,6 +336,8 @@ def main() -> None:
                     help="Number of synthetic windows for Condition C (default: 10)")
     ap.add_argument("--dry-run", action="store_true",
                     help="Validate imports and setup only; do not run the model")
+    ap.add_argument("--window", default=None,
+                    help="Restrict to a single window name (any tier; overrides TEST_STRATEGY_WINDOWS)")
     args = ap.parse_args()
 
     model = default_model(args.model)
@@ -350,11 +352,14 @@ def main() -> None:
     except Exception:
         pass
 
-    # Test windows for this strategy
-    test_event_names = [
-        n for n in TEST_STRATEGY_WINDOWS.get(args.strategy, [])
-        if get_window(n).kind == "event"
-    ]
+    # Test windows for this strategy (overridable with --window for smoke tests)
+    if args.window is not None:
+        test_event_names = [args.window]
+    else:
+        test_event_names = [
+            n for n in TEST_STRATEGY_WINDOWS.get(args.strategy, [])
+            if get_window(n).kind == "event"
+        ]
 
     hmm_train = _hmm_training_returns(STRATEGY_CURVES.get(args.strategy, []))
 
@@ -421,8 +426,8 @@ def main() -> None:
 
         # Leakage bound
         bound = compute_leakage_bound(score_a, score_b, score_c)
-        print(f"  Leakage bound: evidence_skill≥{bound['evidence_skill_lower_bound']:.2f}, "
-              f"memorisation≤{bound['memorisation_upper_bound']:.2f} "
+        print(f"  Leakage bound: evidence_skill>={bound['evidence_skill_lower_bound']:.2f}, "
+              f"memorisation<={bound['memorisation_upper_bound']:.2f} "
               f"[{bound['conclusion']}]")
 
         out_data["windows"][window_name] = {

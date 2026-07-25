@@ -1,0 +1,582 @@
+{
+  "ops_metrics": {
+    "per_window": [
+      {
+        "window": "quant_meltdown_2007",
+        "strategy": "AL_PCA",
+        "kind": "event",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 44,
+        "skip_rate": 0.0,
+        "n_skip": 0,
+        "n_thinking": 41,
+        "n_classical_escalation": 3,
+        "n_supervisor_calls": 44,
+        "n_news_calls": 44,
+        "llm_calls_per_day": 2.0,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "ALERT": 39,
+          "WATCH": 5
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      },
+      {
+        "window": "gfc_lehman_2008",
+        "strategy": "AL_PCA",
+        "kind": "event",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 74,
+        "skip_rate": 0.0,
+        "n_skip": 0,
+        "n_thinking": 74,
+        "n_classical_escalation": 0,
+        "n_supervisor_calls": 62,
+        "n_news_calls": 62,
+        "llm_calls_per_day": 1.676,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "WATCH": 2,
+          "ALERT": 60
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      },
+      {
+        "window": "momentum_crash_2009",
+        "strategy": "AL_PCA",
+        "kind": "event",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 72,
+        "skip_rate": 0.0,
+        "n_skip": 0,
+        "n_thinking": 72,
+        "n_classical_escalation": 0,
+        "n_supervisor_calls": 39,
+        "n_news_calls": 39,
+        "llm_calls_per_day": 1.083,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "ALERT": 36,
+          "WATCH": 3
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      },
+      {
+        "window": "downgrade_2011",
+        "strategy": "AL_PCA",
+        "kind": "event",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 64,
+        "skip_rate": 0.0,
+        "n_skip": 0,
+        "n_thinking": 61,
+        "n_classical_escalation": 3,
+        "n_supervisor_calls": 31,
+        "n_news_calls": 31,
+        "llm_calls_per_day": 0.969,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "ALERT": 11,
+          "WATCH": 20
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      },
+      {
+        "window": "calm_2004_2006",
+        "strategy": "AL_PCA",
+        "kind": "calm",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 754,
+        "skip_rate": 0.9138,
+        "n_skip": 689,
+        "n_thinking": 44,
+        "n_classical_escalation": 21,
+        "n_supervisor_calls": 65,
+        "n_news_calls": 65,
+        "llm_calls_per_day": 0.172,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "NORMAL": 24,
+          "WATCH": 39,
+          "ALERT": 2
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      },
+      {
+        "window": "calm_2013_2014",
+        "strategy": "AL_PCA",
+        "kind": "calm",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 504,
+        "skip_rate": 0.0,
+        "n_skip": 0,
+        "n_thinking": 504,
+        "n_classical_escalation": 0,
+        "n_supervisor_calls": 144,
+        "n_news_calls": 145,
+        "llm_calls_per_day": 0.573,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "WATCH": 91,
+          "ALERT": 53
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      },
+      {
+        "window": "quant_meltdown_2007",
+        "strategy": "JT_MOM",
+        "kind": "event",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 44,
+        "skip_rate": 0.0,
+        "n_skip": 0,
+        "n_thinking": 41,
+        "n_classical_escalation": 3,
+        "n_supervisor_calls": 44,
+        "n_news_calls": 44,
+        "llm_calls_per_day": 2.0,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "ALERT": 27,
+          "WATCH": 17
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      },
+      {
+        "window": "gfc_lehman_2008",
+        "strategy": "JT_MOM",
+        "kind": "event",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 74,
+        "skip_rate": 0.0,
+        "n_skip": 0,
+        "n_thinking": 74,
+        "n_classical_escalation": 0,
+        "n_supervisor_calls": 37,
+        "n_news_calls": 37,
+        "llm_calls_per_day": 1.0,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "WATCH": 7,
+          "ALERT": 30
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      },
+      {
+        "window": "momentum_crash_2009",
+        "strategy": "JT_MOM",
+        "kind": "event",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 72,
+        "skip_rate": 0.0,
+        "n_skip": 0,
+        "n_thinking": 72,
+        "n_classical_escalation": 0,
+        "n_supervisor_calls": 52,
+        "n_news_calls": 52,
+        "llm_calls_per_day": 1.444,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "ALERT": 35,
+          "WATCH": 17
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      },
+      {
+        "window": "downgrade_2011",
+        "strategy": "JT_MOM",
+        "kind": "event",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 64,
+        "skip_rate": 0.0,
+        "n_skip": 0,
+        "n_thinking": 61,
+        "n_classical_escalation": 3,
+        "n_supervisor_calls": 50,
+        "n_news_calls": 51,
+        "llm_calls_per_day": 1.578,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "ALERT": 12,
+          "WATCH": 38
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      },
+      {
+        "window": "calm_2004_2006",
+        "strategy": "JT_MOM",
+        "kind": "calm",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 755,
+        "skip_rate": 0.9497,
+        "n_skip": 717,
+        "n_thinking": 28,
+        "n_classical_escalation": 10,
+        "n_supervisor_calls": 38,
+        "n_news_calls": 38,
+        "llm_calls_per_day": 0.101,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "NORMAL": 10,
+          "WATCH": 26,
+          "ALERT": 2
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      },
+      {
+        "window": "calm_2013_2014",
+        "strategy": "JT_MOM",
+        "kind": "calm",
+        "has_provenance": true,
+        "status": "ok",
+        "n_trading_days": 504,
+        "skip_rate": 0.0,
+        "n_skip": 0,
+        "n_thinking": 502,
+        "n_classical_escalation": 2,
+        "n_supervisor_calls": 104,
+        "n_news_calls": 125,
+        "llm_calls_per_day": 0.454,
+        "error_rate": 0.0,
+        "n_errors": 0,
+        "state_distribution": {
+          "WATCH": 73,
+          "ALERT": 31
+        },
+        "latency_s_note": "not logged to JSONL; p50 estimated ~4-8s based on D2 smoke test"
+      }
+    ],
+    "aggregate": {
+      "mean_llm_calls_per_day": 1.087,
+      "est_wall_clock_typical_s": 4.6,
+      "est_wall_clock_worst_case_s": 8.4,
+      "pre_open_window_feasible": true,
+      "worst_event_window": "quant_meltdown_2007",
+      "worst_event_llm_calls_per_day": 2.0,
+      "note": "GPU Eco Mode can slow inference to ~40s/call (observed); in that regime a 2-call thinking day takes ~80s. On active GPU: ~8-9s/day is feasible pre-open."
+    }
+  },
+  "econ_sim": {
+    "per_window": [
+      {
+        "window": "quant_meltdown_2007",
+        "strategy": "AL_PCA",
+        "status": "ok",
+        "n_days": 44,
+        "onset": "2007-08-06",
+        "baseline": {
+          "max_drawdown": -0.0692,
+          "annualized_return": -0.2437
+        },
+        "agentic": {
+          "max_drawdown": -0.0349,
+          "annualized_return": -0.1761,
+          "drawdown_avoided": 0.0343,
+          "return_drag": 0.0677
+        },
+        "classical_hmm": {
+          "max_drawdown": -0.0691,
+          "annualized_return": -0.4081,
+          "drawdown_avoided": 0.0001,
+          "return_drag": -0.1644,
+          "n_alarms": 2
+        }
+      },
+      {
+        "window": "gfc_lehman_2008",
+        "strategy": "AL_PCA",
+        "status": "ok",
+        "n_days": 74,
+        "onset": "2008-09-15",
+        "baseline": {
+          "max_drawdown": -0.0394,
+          "annualized_return": 0.4304
+        },
+        "agentic": {
+          "max_drawdown": -0.0198,
+          "annualized_return": 0.2005,
+          "drawdown_avoided": 0.0196,
+          "return_drag": -0.2299
+        },
+        "classical_hmm": {
+          "max_drawdown": -0.0204,
+          "annualized_return": 0.0338,
+          "drawdown_avoided": 0.0189,
+          "return_drag": -0.3966,
+          "n_alarms": 4
+        }
+      },
+      {
+        "window": "momentum_crash_2009",
+        "strategy": "AL_PCA",
+        "status": "ok",
+        "n_days": 72,
+        "onset": "2009-03-09",
+        "baseline": {
+          "max_drawdown": -0.0683,
+          "annualized_return": -0.0785
+        },
+        "agentic": {
+          "max_drawdown": -0.0346,
+          "annualized_return": -0.0361,
+          "drawdown_avoided": 0.0336,
+          "return_drag": 0.0425
+        },
+        "classical_hmm": {
+          "max_drawdown": -0.0155,
+          "annualized_return": -0.0467,
+          "drawdown_avoided": 0.0528,
+          "return_drag": 0.0318,
+          "n_alarms": 5
+        }
+      },
+      {
+        "window": "downgrade_2011",
+        "strategy": "AL_PCA",
+        "status": "ok",
+        "n_days": 64,
+        "onset": "2011-08-05",
+        "baseline": {
+          "max_drawdown": -0.0298,
+          "annualized_return": 2.1523
+        },
+        "agentic": {
+          "max_drawdown": -0.015,
+          "annualized_return": 0.8377,
+          "drawdown_avoided": 0.0148,
+          "return_drag": -1.3146
+        },
+        "classical_hmm": {
+          "max_drawdown": -0.0123,
+          "annualized_return": 2.2483,
+          "drawdown_avoided": 0.0176,
+          "return_drag": 0.096,
+          "n_alarms": 1
+        }
+      },
+      {
+        "window": "quant_meltdown_2007",
+        "strategy": "JT_MOM",
+        "status": "ok",
+        "n_days": 44,
+        "onset": "2007-08-06",
+        "baseline": {
+          "max_drawdown": -0.0364,
+          "annualized_return": 0.2536
+        },
+        "agentic": {
+          "max_drawdown": -0.0183,
+          "annualized_return": 0.131,
+          "drawdown_avoided": 0.0181,
+          "return_drag": -0.1226
+        },
+        "classical_hmm": {
+          "max_drawdown": -0.0364,
+          "annualized_return": 0.091,
+          "drawdown_avoided": 0.0,
+          "return_drag": -0.1626,
+          "n_alarms": 1
+        }
+      },
+      {
+        "window": "gfc_lehman_2008",
+        "strategy": "JT_MOM",
+        "status": "ok",
+        "n_days": 74,
+        "onset": "2008-09-15",
+        "baseline": {
+          "max_drawdown": -0.1812,
+          "annualized_return": -0.0461
+        },
+        "agentic": {
+          "max_drawdown": -0.0947,
+          "annualized_return": 0.1222,
+          "drawdown_avoided": 0.0866,
+          "return_drag": 0.1683
+        },
+        "classical_hmm": {
+          "max_drawdown": -0.1812,
+          "annualized_return": -0.0461,
+          "drawdown_avoided": 0.0,
+          "return_drag": 0.0,
+          "n_alarms": 0
+        }
+      },
+      {
+        "window": "momentum_crash_2009",
+        "strategy": "JT_MOM",
+        "status": "ok",
+        "n_days": 72,
+        "onset": "2009-03-09",
+        "baseline": {
+          "max_drawdown": -0.6323,
+          "annualized_return": -0.9306
+        },
+        "agentic": {
+          "max_drawdown": -0.385,
+          "annualized_return": -0.6955,
+          "drawdown_avoided": 0.2474,
+          "return_drag": 0.2351
+        },
+        "classical_hmm": {
+          "max_drawdown": -0.6323,
+          "annualized_return": -0.9306,
+          "drawdown_avoided": 0.0,
+          "return_drag": 0.0,
+          "n_alarms": 0
+        }
+      },
+      {
+        "window": "downgrade_2011",
+        "strategy": "JT_MOM",
+        "status": "ok",
+        "n_days": 64,
+        "onset": "2011-08-05",
+        "baseline": {
+          "max_drawdown": -0.1013,
+          "annualized_return": -0.1648
+        },
+        "agentic": {
+          "max_drawdown": -0.0553,
+          "annualized_return": -0.0993,
+          "drawdown_avoided": 0.046,
+          "return_drag": 0.0654
+        },
+        "classical_hmm": {
+          "max_drawdown": -0.0565,
+          "annualized_return": 0.0017,
+          "drawdown_avoided": 0.0449,
+          "return_drag": 0.1665,
+          "n_alarms": 2
+        }
+      }
+    ],
+    "aggregate": {
+      "mean_agentic_return_drag": -0.136,
+      "mean_classical_return_drag": -0.0537,
+      "mean_agentic_dd_avoided": 0.0625,
+      "mean_classical_dd_avoided": 0.0168,
+      "note": "Return drag < 0 means FP-driven position reductions cost return. Drawdown avoided > 0 means the rule reduced event-window max-drawdown. Rule is per-declared (\u00a7D4 \u00a72): ALERT\u219250%, CRITICAL\u21920%, restore after 5 clean days. Classical arm: HMM alarm \u2192 0% next-day. Next-day execution lag applied. Exploratory only \u2014 not preregistered."
+    }
+  },
+  "failure_modes": {
+    "missed_detections": [],
+    "late_detections": [],
+    "successful_detections": [
+      {
+        "window": "quant_meltdown_2007",
+        "strategy": "AL_PCA",
+        "agentic_latency": 0,
+        "classical_latency": 7,
+        "advantage_days": 7
+      },
+      {
+        "window": "gfc_lehman_2008",
+        "strategy": "AL_PCA",
+        "agentic_latency": 0,
+        "classical_latency": 14,
+        "advantage_days": 14
+      },
+      {
+        "window": "momentum_crash_2009",
+        "strategy": "AL_PCA",
+        "agentic_latency": 0,
+        "classical_latency": 1,
+        "advantage_days": 1
+      },
+      {
+        "window": "downgrade_2011",
+        "strategy": "AL_PCA",
+        "agentic_latency": 5,
+        "classical_latency": 11,
+        "advantage_days": 6
+      },
+      {
+        "window": "quant_meltdown_2007",
+        "strategy": "JT_MOM",
+        "agentic_latency": 0,
+        "classical_latency": 7,
+        "advantage_days": 7
+      },
+      {
+        "window": "gfc_lehman_2008",
+        "strategy": "JT_MOM",
+        "agentic_latency": 2,
+        "classical_latency": null,
+        "advantage_days": null
+      },
+      {
+        "window": "momentum_crash_2009",
+        "strategy": "JT_MOM",
+        "agentic_latency": 1,
+        "classical_latency": null,
+        "advantage_days": null
+      },
+      {
+        "window": "downgrade_2011",
+        "strategy": "JT_MOM",
+        "agentic_latency": 3,
+        "classical_latency": 7,
+        "advantage_days": 4
+      }
+    ],
+    "calm_fp_clusters": [
+      {
+        "window": "calm_2004_2006",
+        "strategy": "AL_PCA",
+        "n_fp_clusters": 1,
+        "fpr_per_day": 0.0012804097311139564,
+        "complete": true
+      },
+      {
+        "window": "calm_2013_2014",
+        "strategy": "AL_PCA",
+        "n_fp_clusters": 20,
+        "fpr_per_day": 0.03838771593090211,
+        "complete": true
+      },
+      {
+        "window": "calm_2004_2006",
+        "strategy": "JT_MOM",
+        "n_fp_clusters": 1,
+        "fpr_per_day": 0.0012804097311139564,
+        "complete": true
+      },
+      {
+        "window": "calm_2013_2014",
+        "strategy": "JT_MOM",
+        "n_fp_clusters": 12,
+        "fpr_per_day": 0.023032629558541268,
+        "complete": true
+      }
+    ],
+    "qualitative_notes": []
+  },
+  "_meta": {
+    "script": "scripts/analyze_viability.py",
+    "phase": "D4",
+    "label": "exploratory \u2014 not preregistered"
+  }
+}
