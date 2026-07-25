@@ -117,11 +117,18 @@ def _run_daily_loop(series: pd.Series, window, articles_by_day: dict,
         else:
             masked_articles = articles_today
 
-        news = run_news_agent(
-            "XXXX-XX-XX" if condition == "B" else day_str,
-            masked_articles, model, logger=logger,
-            extra_label=f"{window.name}:cond{condition}:{dec.mode}",
-        )
+        try:
+            news = run_news_agent(
+                "XXXX-XX-XX" if condition == "B" else day_str,
+                masked_articles, model, logger=logger,
+                extra_label=f"{window.name}:cond{condition}:{dec.mode}",
+            )
+        except (json.JSONDecodeError, ValueError) as exc:
+            # Mirror run_agentic.py: small models sometimes produce unparseable
+            # output; record the failure and continue rather than aborting.
+            rec["news_error"] = str(exc)[:200]
+            records.append(rec)
+            continue
 
         # Build context
         ctx = as_of_context(series, day, alarms_by_det)

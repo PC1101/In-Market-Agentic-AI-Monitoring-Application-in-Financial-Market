@@ -220,4 +220,146 @@ in `viability_dev.json`).
 
 ---
 
+## Deviation 8 — Calibrated detector parameters never applied (audit finding)
+
+**Date:** 2026-07-25 (post-tag codebase audit, before D5)
+**Scope:** `monitoring/run_classical.py` (`_new_detectors`), `monitoring/run_agentic.py`.
+
+**Preregistration implied:** the classical arm runs with detector parameters selected by
+the dev-set calibration grid (`calibrate_classical.py` → `calibration_grid.json`).
+**Actual:** `_new_detectors()` instantiates `PageHinkley(), BOCPD(), HMMDetector(),
+DistributionalThreshold()` with repo DEFAULTS. The calibrated best-per-detector
+parameters (e.g. AL_PCA page_hinkley delta=0.25, lambda_=16.0 vs defaults 0.5/8.0)
+were computed but never wired into the runners. The freeze gate only checks that
+`calibration_grid.json` exists, so this passed 11/11.
+
+**Impact on dev results:** limited on the headline numbers. The H1 classical comparator
+is the *best classical detector per strategy*, which is HMM for both strategies — and
+HMM's calibrated threshold multiplier is 1.0x, i.e. the default. The defect therefore
+affects the non-headline detectors (PageHinkley detected 0/4 AL events on defaults;
+calibrated params might have improved it).
+
+**Impact on test results (D5):** the test set will be run with the same default
+parameters (frozen system). Bias direction: an under-tuned classical arm can only
+*flatter* the agentic latency advantage. The report must state that classical
+detectors ran on default parameters, that the headline HMM comparator is unaffected
+(calibrated = default), and that per-detector secondary comparisons understate
+classical capability.
+
+**Future fix (post-study / v2):** pass `calibration_grid.json` best-params into
+`_new_detectors()` in both runners, add a freeze-gate check that instantiated
+parameters match the grid, and rerun dev + test. Not fixed now: changing the system
+under test after seeing dev results violates the freeze rule, and the tag
+`eval-freeze-v1` already pins the evaluated code.
+
+---
+
+## Deviation 9 — FPR analysis-layer defects: synthesized classical streams + scoring asymmetry (audit finding)
+
+**Date:** 2026-07-25 (post-tag codebase audit, before D5)
+**Scope:** `monitoring/scripts/analyze_dev_results.py` (block bootstrap input),
+`monitoring/metrics.py` vs `monitoring/agentic/alarm_extraction.py` (calm scoring).
+
+**Two related defects in the FPR co-primary endpoint:**
+
+**(a) Synthesized classical alarm streams.** `analyze_dev_results.py` builds the
+classical calm alarm stream for `block_bootstrap_fpr` from the FP *count* only,
+placing alarms at uniform spacing across the window. FP counts (and therefore the
+FPR point estimates and observed_diff) are exact; but uniform spacing destroys the
+temporal clustering of real classical alarms, so the bootstrap CI/variance for the
+classical stream is not faithful (clustering is understated → classical variance
+likely understated → p-value mildly anti-conservative in principle).
+
+**(b) Scoring asymmetry.** Classical calm scoring counts EVERY alarm-day as a false
+positive (`metrics.py`), while agentic calm scoring counts CLUSTER STARTS with a
+5-day dedup (`alarm_extraction.py`, `cluster_starts(dedup_days=5)`). This deflates
+agentic FPR relative to classical by construction.
+
+**Impact on dev results:** the FPR arm did NOT reject (p=0.6207) and no agentic FPR
+advantage is claimed. Both defects bias in the direction of *flattering agentic FPR*,
+so the "no FPR advantage" conclusion is robust a fortiori — the bias could only have
+manufactured an advantage, and none appeared.
+
+**Impact on test results (D5):** the same analysis code scores test calm windows
+(calm_2012, calm_2017). Decision rule, fixed now, before unblinding:
+- If the test-set FPR arm again fails to reject → conclusion stands (bias direction
+  can only overstate the agentic arm).
+- If the test-set FPR arm rejects IN FAVOUR OF AGENTIC → the result must NOT be
+  claimed from the primary scoring alone; a symmetric sensitivity re-scoring
+  (cluster-start dedup applied to BOTH arms, real classical alarm dates in the
+  bootstrap) is required, and only a result that survives it may be reported.
+- Both unconditional and conditional-on-supervisor FPR are reported per Deviation 7.
+
+**Future fix:** (1) persist classical alarm DATES (not just counts) in
+`classical_summary.json` and feed real streams to the bootstrap; (2) apply
+`cluster_starts` dedup to both arms (or neither). These are analysis-layer changes,
+not changes to the system under test; they are still deferred to the sensitivity
+analysis rather than silently swapped in, because the analysis procedure was also
+pre-specified.
+
+---
+
+## Deviation 10 — Leakage harness incomplete at freeze; real-model rerun on dev window (pre-D5)
+
+**Date:** 2026-07-25 (post-tag codebase audit, before D5)
+**Scope:** `monitoring/run_leakage.py`, preregistration §8 (memorisation bound).
+
+**Preregistration said:** every test event window is run under Conditions A (standard),
+B (date-masked), C (synthetic, M=10), producing the leakage bound
+`memorisation_upper_bound = perf_A − min(perf_B, perf_C)`.
+**Status at freeze:** the only leakage artifact was a STUB-model smoke test on one dev
+window (quant_meltdown_2007 × AL_PCA, M=3, Condition B 44/44 runtime failures,
+conclusion "inconclusive"). No real-model leakage evidence existed.
+
+**Why it matters for the TEST set specifically:** the test events (flash_crash_2010,
+china_deval_2015, volmageddon_2018, covid_2020) are prominent, heavily-documented
+episodes almost certainly present in qwen2.5's pretraining corpus. Without the B/C
+controls, a test-set latency win cannot be separated from date/event memorisation.
+
+**Action (this deviation):** rerun `run_leakage.py` with the real model
+(qwen2.5:1.5b) on the dev window quant_meltdown_2007 × AL_PCA before D5. This
+validates the harness end-to-end (the stub run showed Condition B failing at
+runtime) and gives a dev-side memorisation read. It touches no test data and does
+not modify the frozen system — `run_leakage.py` is part of the tagged code. The
+stub artifacts are archived to `monitoring/results/archive/stub/`.
+
+**Impact on test results (D5):** the §8 A/B/C protocol will be run on the test event
+windows as preregistered. The report's H1/H2/H3 claims on test events must be
+accompanied by the leakage bound; if Condition B/C performance collapses relative to
+A, the latency advantage is reported as bounded by memorisation, not as evidence-driven
+skill.
+
+**Future fix:** none needed to code unless the real-model rerun reveals a harness bug;
+any such bug fix would be documented here as a further entry.
+
+**Amendment (2026-07-25, same day):** the real-model rerun DID reveal a harness bug —
+`run_leakage.py:_run_daily_loop` called `run_news_agent` without the per-day
+`(json.JSONDecodeError, ValueError)` guard that the frozen pipeline
+(`run_agentic.py`) uses, so a single empty model output during Condition C aborted
+the whole run. Fixed by mirroring the frozen pipeline's exact error handling
+(record `news_error`, continue). This changes only the leakage harness's failure
+tolerance, not the system under test or any scoring logic. Partial results from the
+aborted run (recorded before the crash): Condition A detected=True latency=0
+(matches D3), Condition B (date-masked) detected=True latency=1 — the stub-era
+"B fails 44/44" behavior is gone with the real model, and near-identical A/B
+performance is preliminary evidence against date-memorisation on this dev window.
+
+**Final real-model result (2026-07-25, after harness fix; 654 LLM calls, 0 news
+failures):** quant_meltdown_2007 × AL_PCA — A: detected, latency 0d, 27 FPs;
+B (date-masked): detected, latency 1d, 12 FPs; C (10 synthetic windows): recall
+3/10, mean latency 1.3d. Prereg bound: evidence_skill ≥ 0.30, memorisation ≤ 0.70,
+conclusion **inconclusive** (perf_C < 0.6 × perf_A). Interpretation for the report:
+- The B≈A result directly manipulates the date channel and finds ~no degradation —
+  strong evidence that *date* memorisation contributes little on this window.
+- The low C recall is confounded by harness austerity: synthetic windows run the
+  HMM UNTRAINED (`hmm_train=None`, divide-by-zero warnings in `hmm.py`), have no
+  real pre-event history, and use template-fabricated news. Low C therefore mixes
+  "no memorisation available" with "harder task", and the min(B, C) bound is
+  dominated by the weaker, confounded control.
+- Per prereg the formal conclusion stays "inconclusive" and must be reported as
+  such; the A/B comparison is reported alongside as the cleaner leakage probe. The
+  same A/B/C protocol runs on the test event windows at D5.
+
+---
+
 *Log last updated: 2026-07-25*
