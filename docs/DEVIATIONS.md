@@ -362,4 +362,44 @@ conclusion **inconclusive** (perf_C < 0.6 × perf_A). Interpretation for the rep
 
 ---
 
+## Deviation 11 — D5 first test-set attempt invalidated by Ollama runner death; rerun
+
+**Date:** 2026-07-25 (D5 test-set runs)
+**Scope:** all 8 agentic test cells; `monitoring/scripts/run_test_windows.py`.
+
+**What happened:** During the first D5 agentic pass (started ~13:00 local), the
+Ollama runner died mid-way through cell 1 (flash_crash_2010 × AL_PCA). Failure
+signature: HTTP 200 responses containing a zero-value struct
+(`{"model": "", "response": "", "done": false}`) for EVERY subsequent generate
+call — including trivial prompts — until the runner was reset with `ollama stop`.
+Cell 1 produced 38/64 supervisor days (all successes contiguous, 2010-04-15 →
+2010-06-08; every day after failed). Cells 2–8 (~1,000 non-skip days) produced
+ZERO supervisor assessments. FinBERT/triage was unaffected (100% triage coverage).
+Likely cause: dGPU drop (Eco Mode) or VRAM contention corrupting the runner; the
+server process stayed alive so no exception surfaced.
+
+**Decision — rerun all 8 cells:** the preregistration's "no second runs" rule
+exists to prevent result-shopping. Cells 2–8 contained no model output at all, so
+there was no result to shop against; the run was an infrastructure outage, and
+the plan's own operational rule is "runtime failures: resume, never restart."
+Cell 1 is also rerun because its final 26 days (40% of the window) are an
+infrastructure artifact, not model noise. Disclosure: cell 1's partial result was
+observed before the rerun decision (detected=True within the first 38 days;
+detection window fully covered). Both the invalid first-attempt JSONLs
+(`results/archive/failed_run_20260725/`) and the rerun files are retained.
+
+**Orchestrator hardening (analysis-layer only; frozen system untouched):**
+`run_test_windows.py` now (a) health-checks the runner before each cell and
+resets it via `ollama stop` if dead; (b) if the runner is found dead at cell
+end, treats the cell tail as suspect and reruns that cell once with a fresh
+runner; (c) refuses to count a cell complete if it has non-skip days but zero
+supervisor records. No change to run_agentic.py, prompts, thresholds, or scoring.
+
+**Impact on test results:** the reported test-set results come from the rerun
+under a healthy backend. Residual per-day news failures in the rerun (if any)
+are genuine model-level failures of the kind documented in Deviation 7 and are
+reported as such.
+
+---
+
 *Log last updated: 2026-07-25*

@@ -1,0 +1,574 @@
+{
+  "AL_PCA": {
+    "status": "ok",
+    "covered": [
+      "calm_2012",
+      "flash_crash_2010"
+    ],
+    "not_covered": [
+      "china_deval_2015"
+    ],
+    "curves": [
+      "C:\\Users\\dungh\\Downloads\\In-Market-Agentic-AI-Monitoring-Application-in-Financial-Market\\Stat Arb\\statsArb-dev\\results\\full_universe\\baseline_2007_2015_pit\\equity_curve.csv"
+    ],
+    "detectors": {
+      "page_hinkley": {
+        "recall": 0.0,
+        "precision": 0.0,
+        "mean_latency_days": null,
+        "false_positive_rate": 0.004,
+        "n_events": 1,
+        "n_detected": 0,
+        "per_window": [
+          {
+            "window": "flash_crash_2010",
+            "kind": "event",
+            "n_alarms": 0,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 64,
+            "fpr": null
+          },
+          {
+            "window": "calm_2012",
+            "kind": "calm",
+            "n_alarms": 1,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 1,
+            "n_trading_days": 250,
+            "fpr": 0.004
+          }
+        ]
+      },
+      "bocpd": {
+        "recall": 0.0,
+        "precision": 0.0,
+        "mean_latency_days": null,
+        "false_positive_rate": 0.004,
+        "n_events": 1,
+        "n_detected": 0,
+        "per_window": [
+          {
+            "window": "flash_crash_2010",
+            "kind": "event",
+            "n_alarms": 1,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 1,
+            "n_trading_days": 64,
+            "fpr": null
+          },
+          {
+            "window": "calm_2012",
+            "kind": "calm",
+            "n_alarms": 1,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 1,
+            "n_trading_days": 250,
+            "fpr": 0.004
+          }
+        ]
+      },
+      "hmm": {
+        "recall": 1.0,
+        "precision": 0.2,
+        "mean_latency_days": 8.0,
+        "false_positive_rate": 0.012,
+        "n_events": 1,
+        "n_detected": 1,
+        "per_window": [
+          {
+            "window": "flash_crash_2010",
+            "kind": "event",
+            "n_alarms": 2,
+            "detected": true,
+            "latency_days": 8,
+            "n_true_positives": 1,
+            "n_false_positives": 1,
+            "n_trading_days": 64,
+            "fpr": null
+          },
+          {
+            "window": "calm_2012",
+            "kind": "calm",
+            "n_alarms": 3,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 3,
+            "n_trading_days": 250,
+            "fpr": 0.012
+          }
+        ]
+      },
+      "distributional": {
+        "recall": 0.0,
+        "precision": NaN,
+        "mean_latency_days": null,
+        "false_positive_rate": 0.0,
+        "n_events": 1,
+        "n_detected": 0,
+        "per_window": [
+          {
+            "window": "flash_crash_2010",
+            "kind": "event",
+            "n_alarms": 0,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 64,
+            "fpr": null
+          },
+          {
+            "window": "calm_2012",
+            "kind": "calm",
+            "n_alarms": 0,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 250,
+            "fpr": 0.0
+          }
+        ]
+      },
+      "aggregate": {
+        "recall": 0.0,
+        "precision": 0.0,
+        "mean_latency_days": null,
+        "false_positive_rate": 0.004,
+        "n_events": 1,
+        "n_detected": 0,
+        "per_window": [
+          {
+            "window": "flash_crash_2010",
+            "kind": "event",
+            "n_alarms": 1,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 1,
+            "n_trading_days": 64,
+            "fpr": null
+          },
+          {
+            "window": "calm_2012",
+            "kind": "calm",
+            "n_alarms": 1,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 1,
+            "n_trading_days": 250,
+            "fpr": 0.004
+          }
+        ]
+      }
+    }
+  },
+  "JT_MOM": {
+    "status": "ok",
+    "covered": [
+      "calm_2012",
+      "calm_2017",
+      "china_deval_2015",
+      "covid_2020",
+      "flash_crash_2010",
+      "volmageddon_2018"
+    ],
+    "not_covered": [],
+    "curves": [
+      "C:\\Users\\dungh\\Downloads\\In-Market-Agentic-AI-Monitoring-Application-in-Financial-Market\\XSectional\\results\\equity_curve_daily.csv"
+    ],
+    "detectors": {
+      "page_hinkley": {
+        "recall": 0.25,
+        "precision": 1.0,
+        "mean_latency_days": 17.0,
+        "false_positive_rate": 0.0,
+        "n_events": 4,
+        "n_detected": 1,
+        "per_window": [
+          {
+            "window": "flash_crash_2010",
+            "kind": "event",
+            "n_alarms": 0,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 64,
+            "fpr": null
+          },
+          {
+            "window": "china_deval_2015",
+            "kind": "event",
+            "n_alarms": 0,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 67,
+            "fpr": null
+          },
+          {
+            "window": "volmageddon_2018",
+            "kind": "event",
+            "n_alarms": 0,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 62,
+            "fpr": null
+          },
+          {
+            "window": "covid_2020",
+            "kind": "event",
+            "n_alarms": 1,
+            "detected": true,
+            "latency_days": 17,
+            "n_true_positives": 1,
+            "n_false_positives": 0,
+            "n_trading_days": 82,
+            "fpr": null
+          },
+          {
+            "window": "calm_2012",
+            "kind": "calm",
+            "n_alarms": 0,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 250,
+            "fpr": 0.0
+          },
+          {
+            "window": "calm_2017",
+            "kind": "calm",
+            "n_alarms": 0,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 251,
+            "fpr": 0.0
+          }
+        ]
+      },
+      "bocpd": {
+        "recall": 0.25,
+        "precision": 0.09090909090909091,
+        "mean_latency_days": 14.0,
+        "false_positive_rate": 0.013972055888223553,
+        "n_events": 4,
+        "n_detected": 1,
+        "per_window": [
+          {
+            "window": "flash_crash_2010",
+            "kind": "event",
+            "n_alarms": 1,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 1,
+            "n_trading_days": 64,
+            "fpr": null
+          },
+          {
+            "window": "china_deval_2015",
+            "kind": "event",
+            "n_alarms": 1,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 1,
+            "n_trading_days": 67,
+            "fpr": null
+          },
+          {
+            "window": "volmageddon_2018",
+            "kind": "event",
+            "n_alarms": 0,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 62,
+            "fpr": null
+          },
+          {
+            "window": "covid_2020",
+            "kind": "event",
+            "n_alarms": 2,
+            "detected": true,
+            "latency_days": 14,
+            "n_true_positives": 1,
+            "n_false_positives": 1,
+            "n_trading_days": 82,
+            "fpr": null
+          },
+          {
+            "window": "calm_2012",
+            "kind": "calm",
+            "n_alarms": 0,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 250,
+            "fpr": 0.0
+          },
+          {
+            "window": "calm_2017",
+            "kind": "calm",
+            "n_alarms": 7,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 7,
+            "n_trading_days": 251,
+            "fpr": 0.027888446215139442
+          }
+        ]
+      },
+      "hmm": {
+        "recall": 0.5,
+        "precision": 0.15384615384615385,
+        "mean_latency_days": 8.0,
+        "false_positive_rate": 0.015968063872255488,
+        "n_events": 4,
+        "n_detected": 2,
+        "per_window": [
+          {
+            "window": "flash_crash_2010",
+            "kind": "event",
+            "n_alarms": 2,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 2,
+            "n_trading_days": 64,
+            "fpr": null
+          },
+          {
+            "window": "china_deval_2015",
+            "kind": "event",
+            "n_alarms": 2,
+            "detected": true,
+            "latency_days": 2,
+            "n_true_positives": 1,
+            "n_false_positives": 1,
+            "n_trading_days": 67,
+            "fpr": null
+          },
+          {
+            "window": "volmageddon_2018",
+            "kind": "event",
+            "n_alarms": 0,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 62,
+            "fpr": null
+          },
+          {
+            "window": "covid_2020",
+            "kind": "event",
+            "n_alarms": 1,
+            "detected": true,
+            "latency_days": 14,
+            "n_true_positives": 1,
+            "n_false_positives": 0,
+            "n_trading_days": 82,
+            "fpr": null
+          },
+          {
+            "window": "calm_2012",
+            "kind": "calm",
+            "n_alarms": 5,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 5,
+            "n_trading_days": 250,
+            "fpr": 0.02
+          },
+          {
+            "window": "calm_2017",
+            "kind": "calm",
+            "n_alarms": 3,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 3,
+            "n_trading_days": 251,
+            "fpr": 0.01195219123505976
+          }
+        ]
+      },
+      "distributional": {
+        "recall": 0.5,
+        "precision": 0.18181818181818182,
+        "mean_latency_days": 14.0,
+        "false_positive_rate": 0.005988023952095809,
+        "n_events": 4,
+        "n_detected": 2,
+        "per_window": [
+          {
+            "window": "flash_crash_2010",
+            "kind": "event",
+            "n_alarms": 3,
+            "detected": true,
+            "latency_days": 14,
+            "n_true_positives": 1,
+            "n_false_positives": 2,
+            "n_trading_days": 64,
+            "fpr": null
+          },
+          {
+            "window": "china_deval_2015",
+            "kind": "event",
+            "n_alarms": 0,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 67,
+            "fpr": null
+          },
+          {
+            "window": "volmageddon_2018",
+            "kind": "event",
+            "n_alarms": 0,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 62,
+            "fpr": null
+          },
+          {
+            "window": "covid_2020",
+            "kind": "event",
+            "n_alarms": 5,
+            "detected": true,
+            "latency_days": 14,
+            "n_true_positives": 1,
+            "n_false_positives": 4,
+            "n_trading_days": 82,
+            "fpr": null
+          },
+          {
+            "window": "calm_2012",
+            "kind": "calm",
+            "n_alarms": 1,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 1,
+            "n_trading_days": 250,
+            "fpr": 0.004
+          },
+          {
+            "window": "calm_2017",
+            "kind": "calm",
+            "n_alarms": 2,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 2,
+            "n_trading_days": 251,
+            "fpr": 0.00796812749003984
+          }
+        ]
+      },
+      "aggregate": {
+        "recall": 0.25,
+        "precision": 0.14285714285714285,
+        "mean_latency_days": 14.0,
+        "false_positive_rate": 0.005988023952095809,
+        "n_events": 4,
+        "n_detected": 1,
+        "per_window": [
+          {
+            "window": "flash_crash_2010",
+            "kind": "event",
+            "n_alarms": 1,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 1,
+            "n_trading_days": 64,
+            "fpr": null
+          },
+          {
+            "window": "china_deval_2015",
+            "kind": "event",
+            "n_alarms": 1,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 1,
+            "n_trading_days": 67,
+            "fpr": null
+          },
+          {
+            "window": "volmageddon_2018",
+            "kind": "event",
+            "n_alarms": 0,
+            "detected": false,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 62,
+            "fpr": null
+          },
+          {
+            "window": "covid_2020",
+            "kind": "event",
+            "n_alarms": 2,
+            "detected": true,
+            "latency_days": 14,
+            "n_true_positives": 1,
+            "n_false_positives": 1,
+            "n_trading_days": 82,
+            "fpr": null
+          },
+          {
+            "window": "calm_2012",
+            "kind": "calm",
+            "n_alarms": 0,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 0,
+            "n_trading_days": 250,
+            "fpr": 0.0
+          },
+          {
+            "window": "calm_2017",
+            "kind": "calm",
+            "n_alarms": 3,
+            "detected": null,
+            "latency_days": null,
+            "n_true_positives": 0,
+            "n_false_positives": 3,
+            "n_trading_days": 251,
+            "fpr": 0.01195219123505976
+          }
+        ]
+      }
+    }
+  }
+}
