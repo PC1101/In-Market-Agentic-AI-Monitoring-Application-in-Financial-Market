@@ -402,4 +402,114 @@ reported as such.
 
 ---
 
-*Log last updated: 2026-07-25*
+## Deviation 12 — Post-freeze infra hardening: day-level resume + dead-runner auto-recovery
+
+**Date:** 2026-07-26 (D5 test-set runs, continued)
+**Scope:** `monitoring/agentic/model.py`, `monitoring/run_agentic.py` (infra only).
+
+**Problem:** Recurring Ollama runner deaths (HTTP 500, dead-runner 200-OK with
+empty response, connection refused) caused repeated cell restarts with total
+progress loss (old code deleted the JSONL on each restart). Additionally, the
+model-level `ValueError` from exhausted retries was silently caught by the
+per-day error handler, poisoning remaining days as pseudo-model-failures.
+
+**Changes (analysis-layer only; frozen prompts/thresholds/scoring untouched):**
+
+1. **`OllamaModel.complete()` — 3-attempt auto-recovery:** detects both HTTP 500
+   and dead-runner (HTTP 200, `done=False` or empty `response`), resets with
+   `ollama stop` + 5s wait between attempts. On exhaustion, raises new
+   `DeadRunnerError(RuntimeError)` instead of `ValueError`. URLError (connection
+   refused, socket timeout) also triggers reset. Retries re-send byte-identical
+   requests at temperature 0 — deterministic; no decision-logic change.
+
+2. **`run_agentic.py` — day-level resume:** on restart, reads the existing JSONL
+   and skips days that have terminal evidence (a `performance_supervisor` line or
+   a `triage` line with `mode=skip`). Bare triage lines from aborted days are
+   NOT skipped — they get reprocessed. No delete-and-restart.
+
+3. **`DeadRunnerError` propagation:** the daily `except (JSONDecodeError,
+   ValueError)` handler in `run_window()` does NOT catch `DeadRunnerError`
+   (which inherits from `RuntimeError`). When the runner is unrecoverable, the
+   run aborts immediately instead of poisoning all subsequent days as
+   pseudo-failures. The orchestrator retries the cell; day-level resume makes
+   restart cheap.
+
+**Impact on results:** identical prompts, identical thresholds, identical scoring.
+The only effect is availability: runs complete instead of crashing or poisoning
+days. Temperature 0 + structured outputs means a re-sent request produces the
+same model output.
+
+**Tests added:** `test_resume_skip_dates_strict` (bare triage not counted as
+done), `test_dead_runner_error_propagates` (DeadRunnerError escapes the daily
+handler). Full suite: 240 passed.
+
+---
+
+## Deviation 13 — Context-cache two-pass design for covid_2020 (infra-only)
+
+**Date:** 2026-07-26 (covid_2020 run)
+**Scope:** `monitoring/scripts/precompute_context.py` (new), `monitoring/run_agentic.py` (`--context-cache` flag).
+
+**Problem:** The covid_2020 window (82 trading days) required querying the 857 MB FNSPID
+parquet store per day. The combined I/O + Ollama VRAM pressure caused the runner to
+go stale (dead-runner pattern) within 2 days, making the window unrunnable in-process.
+
+**Change:** Split into a two-pass design:
+- Pass 1 (`precompute_context.py`): loads the parquet store, computes `intensity_z`
+  (from `daily_signals`) and top-40 filtered articles per trading day, writes to a
+  lightweight JSON cache (`results/context_cache/covid_2020.json`, 562 KB).
+- Pass 2 (`run_agentic.py --context-cache ...`): reads cache in-memory, never imports
+  the parquet store — the process stays under 300 MB, preserving VRAM for Ollama.
+
+**Integrity:** The cache computes `intensity_z` and articles using the SAME code paths
+as the inline `run_window` logic (identical query windows, `filter_news`, sort, head).
+A `--context-cache` run is byte-for-byte equivalent to an inline run (modulo float
+rounding in JSON serialisation, ≤1e-4). The same `--finbert-cache` pattern already
+existed for FinBERT stress scores (preregistered separation of concerns).
+
+**Impact on results:** none. The model receives identical prompt content regardless
+of whether the data arrives from parquet or from the JSON cache. Verified by matching
+triage decisions on overlapping days.
+
+---
+
+## Deviation 14 — Day-level DeadRunnerError retry (run_agentic.py)
+
+**Date:** 2026-07-26 (mid-test-set)
+**Scope:** `monitoring/run_agentic.py` (news agent + supervisor call sites).
+
+**Change:** When `run_news_agent` or `run_supervisor` raises `DeadRunnerError`, the
+pipeline now does a 15-second cooldown + ping + one retry BEFORE recording the day
+as failed. On success the day proceeds normally; on failure the day is recorded with
+`news_error` or `supervisor_error` and skipped (no abort).
+
+**Motivation:** GPU thermal throttling (RTX 3050 Ti, 87°C → 66% clocks) caused
+transient dead-runner states that resolved after cooling. Without the retry, these
+days were permanently lost or required manual restart.
+
+**Impact:** Identical prompts at temperature 0 — deterministic re-send. The retry
+adds availability (3 previously-failed covid_2020 days completed on retry after
+cooldown), not decision changes. No threshold, prompt, or scoring modification.
+
+---
+
+## Deviation 15 — 3 thermal-stall covid_2020 days rerun after cooldown
+
+**Date:** 2026-07-26
+**Scope:** covid_2020 × JT_MOM, days 2020-02-04, 2020-03-24, 2020-03-25.
+
+**What happened:** During the initial 82-day run, 3 days failed even after the
+day-level retry (Deviation 14) because the GPU was in sustained thermal throttle
+(87°C). After waiting for the GPU to cool to 42°C, the same run was resumed
+(`--context-cache` + day-level resume from Deviation 12). The 3 days completed in
+one shot with `--max-articles 10` (reduced prompt size to prevent re-triggering
+thermal stall).
+
+**Impact:** The 3 days received a shorter news prompt (10 articles instead of 40).
+This is conservative: fewer articles means less information, so any detection
+advantage is not inflated. All other 79 days used the full 40-article ceiling.
+The final JSONL has 82/82 assessed days with 0 errors.
+
+---
+
+*Log last updated: 2026-07-26*

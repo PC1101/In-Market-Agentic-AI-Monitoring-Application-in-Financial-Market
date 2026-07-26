@@ -31,6 +31,10 @@ from abc import ABC, abstractmethod
 from .schemas import State, Action
 
 
+class DeadRunnerError(RuntimeError):
+    """Ollama runner subprocess is dead and could not be recovered after retries."""
+
+
 def _extract_as_of(text: str) -> str:
     """Pull the ``as_of`` date out of a rendered user prompt (shared by the
     supervisor and news-mode branches of ``OfflineStubModel``).
@@ -181,11 +185,14 @@ class OllamaModel(LocalModel):
     server-side, so the response is guaranteed to have the schema's shape.
     """
 
+    # After a reset, retry with a shorter timeout to detect recurring death quickly.
+    RETRY_TIMEOUT: int = 120  # seconds
+
     def __init__(self, model: str = "qwen2.5:1.5b", host: str = "http://localhost:11434",
-                 temperature: float = 0.0, timeout: float = 1800.0,
+                 temperature: float = 0.0, timeout: float = 300.0,
                  json_schema: dict | None = None):
-        # 1800 s: GFC/mc09 windows have 5-8k risk articles; combined news+supervisor
-        # prompts on those days can cause slow inference when GPU drops to Eco mode.
+        # 300 s: qwen2.5:1.5b completes most prompts in <30s; 5 min is generous
+        # even under thermal throttling. Fail fast so the resilient loop can reset.
         self.model = model
         self.host = host.rstrip("/")
         self.temperature = temperature
@@ -193,8 +200,34 @@ class OllamaModel(LocalModel):
         self.json_schema = json_schema
         self.name = f"ollama:{model}"
 
+    def _reset_runner(self) -> None:
+        """Stop and restart the Ollama runner subprocess.
+
+        Handles the "dead-runner" pattern: Ollama returns HTTP 200 with done=false
+        or an empty response field when the underlying runner subprocess has died
+        (typically from GPU thermal throttling or memory pressure). The fix is to
+        explicitly stop the model (which kills the runner), wait for GPU cooldown,
+        then trigger a fresh generate to force the runner to reload weights.
+        """
+        import subprocess, time as _time
+        subprocess.run(["ollama", "stop", self.model], capture_output=True)
+        _time.sleep(10)
+        # Warm-up: a tiny generate call forces the runner to reload.
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                f"{self.host}/api/generate",
+                data=json.dumps({"model": self.model, "prompt": "hi",
+                                 "stream": False}).encode(),
+                headers={"Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                resp.read()
+        except Exception:
+            pass  # best effort
+
     def complete(self, system: str, user: str, json_schema: dict | None = None) -> dict:
-        import urllib.request  # stdlib only; no hard dependency
+        import urllib.request, urllib.error  # stdlib only; no hard dependency
 
         schema = json_schema if json_schema is not None else self.json_schema
         payload = {
@@ -204,22 +237,41 @@ class OllamaModel(LocalModel):
             "format": schema if schema is not None else "json",
             "options": {"temperature": self.temperature},
         }
-        req = urllib.request.Request(
-            f"{self.host}/api/generate",
-            data=json.dumps(payload).encode(),
-            headers={"Content-Type": "application/json"},
-        )
-        # Retry once on malformed JSON (small models sometimes emit garbage on
-        # very long prompts).
-        for attempt in range(2):
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                body = json.loads(resp.read().decode())
+
+        # Outer loop: retry with runner reset on infra failures (HTTP 500,
+        # dead-runner 200-OK, connection refused, socket timeout).
+        for http_attempt in range(3):
+            timeout = self.timeout if http_attempt == 0 else self.RETRY_TIMEOUT
+            req = urllib.request.Request(
+                f"{self.host}/api/generate",
+                data=json.dumps(payload).encode(),
+                headers={"Content-Type": "application/json"},
+            )
             try:
-                return self._extract_json(body.get("response", ""))
-            except (json.JSONDecodeError, ValueError):
-                if attempt == 0:
+                # Inner loop: retry once on malformed JSON (small models sometimes
+                # emit garbage on very long prompts).
+                for attempt in range(2):
+                    with urllib.request.urlopen(req, timeout=timeout) as resp:
+                        body = json.loads(resp.read().decode())
+                    # Detect dead-runner: HTTP 200 but done=False or empty response
+                    if not body.get("done") or not body.get("response"):
+                        raise urllib.error.URLError("dead runner: done=%s, response empty"
+                                                    % body.get("done"))
+                    try:
+                        return self._extract_json(body.get("response", ""))
+                    except (json.JSONDecodeError, ValueError):
+                        if attempt == 0:
+                            continue
+                        raise
+            except (urllib.error.URLError, TimeoutError, ConnectionError):
+                # Covers HTTPError (inc. 500), connection refused, dead-runner,
+                # socket timeouts, and connection resets.
+                if http_attempt < 2:
+                    self._reset_runner()
                     continue
-                raise
+                raise DeadRunnerError(
+                    f"Ollama runner unrecoverable after {http_attempt+1} reset attempts"
+                )
 
 
 def default_model(spec: str | None = None) -> LocalModel:

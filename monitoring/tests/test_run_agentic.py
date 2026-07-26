@@ -3,9 +3,10 @@ import json
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from run_agentic import run_window, _log_run_meta
-from agentic.model import OfflineStubModel
+from agentic.model import OfflineStubModel, DeadRunnerError
 from agentic.logging_utils import RunLogger
 from agentic.schemas import validate_assessment
 from news.store import build_store, NewsStore
@@ -74,3 +75,64 @@ def test_run_window_end_to_end_stub(tmp_path):
     lines = [json.loads(l) for l in (tmp_path / "log.jsonl").read_text().splitlines()]
     assert any(rec["agent"] == "news_context" for rec in lines)
     assert any(rec["agent"] == "performance_supervisor" for rec in lines)
+
+
+def test_resume_skip_dates_strict(tmp_path):
+    """Day-level resume: only skip-triage and supervisor days count as done.
+    Bare triage lines (aborted mid-call) must be reprocessed."""
+    jsonl = tmp_path / "resume_test.jsonl"
+    lines = [
+        # run_meta — never counted
+        json.dumps({"agent": "run_meta", "model": "stub"}),
+        # day A: skip-triage → DONE
+        json.dumps({"agent": "triage", "as_of": "2020-01-02", "triage_mode": "skip"}),
+        # day B: triage + supervisor → DONE
+        json.dumps({"agent": "triage", "as_of": "2020-01-03", "triage_mode": "thinking"}),
+        json.dumps({"agent": "performance_supervisor", "as_of": "2020-01-03"}),
+        # day C: bare triage only (aborted) → NOT DONE
+        json.dumps({"agent": "triage", "as_of": "2020-01-06", "triage_mode": "thinking"}),
+        # day D: triage + news_context but no supervisor (aborted) → NOT DONE
+        json.dumps({"agent": "triage", "as_of": "2020-01-07", "triage_mode": "classical_escalation"}),
+        json.dumps({"agent": "news_context", "as_of": "2020-01-07"}),
+    ]
+    jsonl.write_text("\n".join(lines) + "\n")
+
+    # Simulate the resume scan from run_agentic.py main()
+    _supervisor_dates: set[str] = set()
+    _skip_triage_dates: set[str] = set()
+    with open(jsonl) as fh:
+        for line in fh:
+            rec = json.loads(line)
+            agent = rec.get("agent", "")
+            d = rec.get("as_of") or rec.get("date")
+            if not d or agent == "run_meta":
+                continue
+            if agent == "performance_supervisor":
+                _supervisor_dates.add(d)
+            elif agent == "triage" and rec.get("triage_mode") == "skip":
+                _skip_triage_dates.add(d)
+    skip_dates = _supervisor_dates | _skip_triage_dates
+
+    assert "2020-01-02" in skip_dates   # skip-triage day
+    assert "2020-01-03" in skip_dates   # supervisor day
+    assert "2020-01-06" not in skip_dates  # bare triage
+    assert "2020-01-07" not in skip_dates  # triage+news but no supervisor
+
+
+class _DeadRunnerModel(OfflineStubModel):
+    """Stub that raises DeadRunnerError on every complete() call."""
+    def complete(self, system, user, json_schema=None):
+        raise DeadRunnerError("simulated dead runner")
+
+
+def test_dead_runner_error_skips_day(tmp_path):
+    """DeadRunnerError is caught at the day level — the day is skipped with an
+    error recorded, and the run continues rather than aborting."""
+    series, store, window = _synthetic(tmp_path)
+    logger = RunLogger(tmp_path / "log.jsonl")
+    records = run_window(series, window, store, _DeadRunnerModel(),
+                         logger=logger, macro_dir=tmp_path / "no_macro")
+    # Days that would have called the model should have error entries
+    errors = [r for r in records if "news_error" in r or "supervisor_error" in r]
+    assert len(errors) > 0, "expected at least one day with a dead_runner error"
+    assert any("dead_runner" in (r.get("news_error") or "") for r in errors)
