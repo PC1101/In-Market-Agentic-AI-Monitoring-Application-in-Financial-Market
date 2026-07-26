@@ -16,7 +16,7 @@ from .schemas import (
 from .guardrails import (
     as_of_context, assert_no_lookahead, filter_news_by_timestamp, scrub_future_dated,
 )
-from .model import LocalModel, OfflineStubModel, OllamaModel, default_model, make_model
+from .model import LocalModel, OfflineStubModel, OllamaModel, DeadRunnerError, default_model, make_model
 from .prompts import build_supervisor_prompt_v3, SUPERVISOR_PROMPT_VERSION_V3
 from .logging_utils import RunLogger
 from .runner import run_supervisor
@@ -38,6 +38,7 @@ __all__ = [
     "LocalModel",
     "OfflineStubModel",
     "OllamaModel",
+    "DeadRunnerError",
     "default_model",
     "make_model",
     "build_supervisor_prompt_v3",

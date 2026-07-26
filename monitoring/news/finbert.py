@@ -45,6 +45,7 @@ def _load_pipeline():
             top_k=None,           # return all class scores
             truncation=True,
             max_length=512,
+            device="cpu",         # GPU reserved for Ollama (4GB VRAM constraint)
         )
         logger.info("FinBERT loaded: %s", _MODEL_NAME)
     except Exception as exc:
