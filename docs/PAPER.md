@@ -392,6 +392,59 @@ Failures are caused by `json.JSONDecodeError` and `ValueError` when the news age
 
 Mean supervisor call latency: 3-5 seconds per trading day (qwen2.5:1.5b on RTX 3050 Ti). Total wall-clock time for a 74-day event window: approximately 6-8 minutes (including news retrieval and caching). This is operationally viable for end-of-day monitoring but not for intraday applications.
 
+### 5.6 Economic Impact: PnL Comparison
+
+To translate the latency advantage into economic terms, we simulate three monitoring regimes across all 13 event-window pairs (8 dev + 5 test): (1) **unmonitored** — hold the strategy position throughout the window; (2) **classical-monitored** — go flat on the first HMM alarm day, remain flat for a 5-trading-day cooldown; (3) **agentic-monitored** — same rule applied to the first supervisor ALERT/CRITICAL assessment. This is a simplified simulation: it assumes immediate execution at the close, zero transaction costs, and a binary flat/invested position. It measures the maximum drawdown experienced under each regime and the drawdown avoided relative to the unmonitored baseline.
+
+#### 5.6.1 Per-Window Results
+
+**Table 5: PnL impact by monitoring regime (all event windows)**
+
+| Window | Strategy | Set | Unmon Return | Unmon MaxDD | Cls MaxDD | Ag MaxDD | DD Avoided (Cls) | DD Avoided (Ag) |
+|--------|----------|-----|-------------|-------------|-----------|----------|-----------------|-----------------|
+| quant_meltdown_2007 | AL_PCA | Dev | -4.6% | -7.0% | -4.0% | -0.1% | +3.0 pp | +6.9 pp |
+| gfc_lehman_2008 | AL_PCA | Dev | +10.8% | -4.0% | -2.2% | -0.8% | +1.8 pp | +3.2 pp |
+| momentum_crash_2009 | AL_PCA | Dev | -2.1% | -7.0% | -4.9% | -3.0% | +2.1 pp | +4.0 pp |
+| downgrade_2011 | AL_PCA | Dev | +33.7% | -3.0% | -3.0% | -3.0% | +0.0 pp | +0.1 pp |
+| quant_meltdown_2007 | JT_MOM | Dev | +4.0% | -3.7% | -3.7% | -2.2% | +0.0 pp | +1.5 pp |
+| gfc_lehman_2008 | JT_MOM | Dev | +1.6% | -18.5% | -18.5% | -2.9% | +0.0 pp | +15.6 pp |
+| momentum_crash_2009 | JT_MOM | Dev | -69.2% | -94.5% | -94.5% | -22.2% | +0.0 pp | **+72.3 pp** |
+| downgrade_2011 | JT_MOM | Dev | -4.2% | -10.4% | -5.8% | -3.1% | +4.7 pp | +7.3 pp |
+| flash_crash_2010 | AL_PCA | Test | -2.0% | -3.7% | -1.3% | -0.2% | +2.4 pp | +3.5 pp |
+| flash_crash_2010 | JT_MOM | Test | -9.9% | -15.6% | -9.4% | -5.2% | +6.2 pp | +10.3 pp |
+| china_deval_2015 | JT_MOM | Test | +7.6% | -9.9% | -6.5% | -8.2% | +3.4 pp | +1.7 pp |
+| volmageddon_2018 | JT_MOM | Test | +5.5% | -4.1% | -4.1% | -4.1% | +0.0 pp | -0.0 pp |
+| covid_2020 | JT_MOM | Test | +14.1% | -19.2% | -19.2% | -14.4% | +0.0 pp | +4.9 pp |
+
+#### 5.6.2 Aggregate Economic Impact
+
+Across all 13 event-window pairs:
+
+- **Mean drawdown avoided (classical HMM):** +1.82 percentage points
+- **Mean drawdown avoided (agentic):** +10.09 percentage points
+- **Agentic economic advantage over classical:** +8.28 percentage points of drawdown avoided per event
+
+The agentic arm avoids more drawdown than classical in 11 of 13 windows. The two exceptions are china_deval_2015 (agentic detected 7 days slower than classical, reducing its protective value) and volmageddon_2018 (agentic fired on day 8 but the drawdown had already occurred intraday on day 1).
+
+#### 5.6.3 Extreme Cases
+
+The most striking case is **momentum_crash_2009 × JT_MOM**, where the cross-sectional momentum strategy experienced a catastrophic 94.5% peak-to-trough drawdown during the momentum crash. The classical HMM failed to detect this event entirely (it does not appear in the HMM's volatility state model, which is calibrated for mean-reverting regimes). The agentic system detected it on day 1 after onset, going flat and avoiding 72.3 percentage points of drawdown — a potentially portfolio-saving intervention.
+
+Similarly, **gfc_lehman_2008 × JT_MOM** shows the agentic arm avoiding 15.6 pp of drawdown on an 18.5% unmonitored drawdown, while the classical HMM (which also missed this event for JT_MOM) provided no protection.
+
+#### 5.6.4 Interpretation and Caveats
+
+The PnL simulation is not a backtest of a trading strategy; it is a counterfactual analysis of monitoring value. Key caveats:
+
+1. **Transaction costs ignored:** Going flat and re-entering incurs costs that reduce the benefit. For institutional momentum portfolios (high turnover), the re-entry cost may be material.
+2. **Binary position assumption:** In practice, a portfolio manager might reduce rather than eliminate exposure. The REDUCE and HALT actions from the supervisor could inform graduated responses, but we model only the binary case.
+3. **Cooldown sensitivity:** The 5-day flat period is arbitrary. Shorter cooldowns capture more recovery; longer cooldowns provide more protection. The reported figures are sensitive to this parameter.
+4. **Survivorship in the simulation:** The PnL curves are point-in-time, but the simulation assumes the portfolio manager acts on the monitoring signal — an assumption about human behaviour, not market microstructure.
+
+Despite these caveats, the direction of the result is robust: earlier detection of regime breaks provides economic value by reducing exposure to adverse tail moves. The mean advantage of 8.28 pp per event, while simulated under idealised assumptions, establishes that the latency advantage documented in Section 5.1 has practical significance beyond statistical significance.
+
+**Figures:** The equity-curve overlays (Figure 10), drawdown-avoided bar chart (Figure 11), and summary table (Figure 12) are included in the supplementary materials.
+
 ---
 
 ## 6. Discussion
