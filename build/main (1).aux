@@ -1,0 +1,61 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\newlabel{sec:intro}{{1}{1}{Introduction}{section.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Data and Strategies}{1}{section.2}\protected@file@percent }
+\newlabel{sec:data}{{2}{1}{Data and Strategies}{section.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Method}{2}{section.3}\protected@file@percent }
+\newlabel{sec:method}{{3}{2}{Method}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Classical Arm}{2}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:method-classical}{{3.1}{2}{Classical Arm}{subsection.3.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Agentic Arm}{2}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:method-agentic}{{3.2}{2}{Agentic Arm}{subsection.3.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Agentic architecture. All inputs pass through fail-closed guardrails before the three-layer pipeline; triage routes each day to \textsc  {skip} (no LLM call) or to progressively richer inference modes.}}{2}{figure.1}\protected@file@percent }
+\newlabel{fig:architecture}{{1}{2}{Agentic architecture. All inputs pass through fail-closed guardrails before the three-layer pipeline; triage routes each day to \textsc {skip} (no LLM call) or to progressively richer inference modes}{figure.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Endpoints and Analysis Plan}{3}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:method-endpoints}{{3.3}{3}{Endpoints and Analysis Plan}{subsection.3.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Evaluation Protocol}{3}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:protocol}{{3.4}{3}{Evaluation Protocol}{subsection.3.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Results}{3}{section.4}\protected@file@percent }
+\newlabel{sec:results}{{4}{3}{Results}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Detection Latency}{3}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:results-latency}{{4.1}{3}{Detection Latency}{subsection.4.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}False-Positive Rate}{3}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:results-fpr}{{4.2}{3}{False-Positive Rate}{subsection.4.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Recall and H1 Verdict}{3}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:results-recall}{{4.3}{3}{Recall and H1 Verdict}{subsection.4.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Paired detection latency (calendar days from onset). ``Cens.''\ marks non-detections imputed at $\ell = 21$\,d. Classical comparator is HMM.}}{4}{table.1}\protected@file@percent }
+\newlabel{tab:latency}{{1}{4}{Paired detection latency (calendar days from onset). ``Cens.''\ marks non-detections imputed at $\ell = 21$\,d. Classical comparator is HMM}{table.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Detection latency per event window: agentic (red) versus classical HMM (blue); shorter bars are better. Hatched bars denote misses censored at 21 days.}}{4}{figure.2}\protected@file@percent }
+\newlabel{fig:latency-bars}{{2}{4}{Detection latency per event window: agentic (red) versus classical HMM (blue); shorter bars are better. Hatched bars denote misses censored at 21 days}{figure.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces False-positive rate per calm window (agentic: alarm cluster starts / trading days; classical: alarm days / trading days, cf.\ Deviation~9).}}{4}{table.2}\protected@file@percent }
+\newlabel{tab:fpr}{{2}{4}{False-positive rate per calm window (agentic: alarm cluster starts / trading days; classical: alarm days / trading days, cf.\ Deviation~9)}{table.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces False-positive rate per calm window. Agentic FPR is comparable on the development set but elevated on the test set, particularly calm 2012.}}{5}{figure.3}\protected@file@percent }
+\newlabel{fig:fpr-dot}{{3}{5}{False-positive rate per calm window. Agentic FPR is comparable on the development set but elevated on the test set, particularly calm 2012}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Strategy Breakdown (H2, H3)}{5}{subsection.4.4}\protected@file@percent }
+\newlabel{sec:results-strategy}{{4.4}{5}{Strategy Breakdown (H2, H3)}{subsection.4.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Per-strategy latency advantage (development set). JT\_MOM benefits more, primarily because the HMM misses two events on momentum returns.}}{5}{figure.4}\protected@file@percent }
+\newlabel{fig:strategy}{{4}{5}{Per-strategy latency advantage (development set). JT\_MOM benefits more, primarily because the HMM misses two events on momentum returns}{figure.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Economic Significance (Exploratory)}{5}{subsection.4.5}\protected@file@percent }
+\newlabel{sec:results-pnl}{{4.5}{5}{Economic Significance (Exploratory)}{subsection.4.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Robustness, Leakage, and Operations}{5}{subsection.4.6}\protected@file@percent }
+\newlabel{sec:results-ops}{{4.6}{5}{Robustness, Leakage, and Operations}{subsection.4.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Maximum drawdown avoided (pp) relative to the unmonitored baseline.}}{6}{table.3}\protected@file@percent }
+\newlabel{tab:pnl}{{3}{6}{Maximum drawdown avoided (pp) relative to the unmonitored baseline}{table.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Drawdown avoided (pp) per event window. The agentic arm avoids more drawdown in 11 of 13 windows (one tie, one reversal).}}{6}{figure.5}\protected@file@percent }
+\newlabel{fig:dd-avoided}{{5}{6}{Drawdown avoided (pp) per event window. The agentic arm avoids more drawdown in 11 of 13 windows (one tie, one reversal)}{figure.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Discussion}{6}{section.5}\protected@file@percent }
+\newlabel{sec:discussion}{{5}{6}{Discussion}{section.5}{}}
+\newlabel{sec:power}{{5}{7}{Discussion}{section.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{7}{section.6}\protected@file@percent }
+\newlabel{sec:conclusion}{{6}{7}{Conclusion}{section.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Protocol Deviations}{7}{appendix.A}\protected@file@percent }
+\newlabel{app:deviations}{{A}{7}{Protocol Deviations}{appendix.A}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Protocol deviations. ``Bias'' indicates whether the deviation favours or disfavours the agentic arm for the affected endpoint.}}{8}{table.4}\protected@file@percent }
+\newlabel{tab:deviations}{{4}{8}{Protocol deviations. ``Bias'' indicates whether the deviation favours or disfavours the agentic arm for the affected endpoint}{table.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Triage Hyperparameters}{8}{appendix.B}\protected@file@percent }
+\newlabel{app:triage}{{B}{8}{Triage Hyperparameters}{appendix.B}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Triage hyperparameters (fixed a priori, preregistration \S  6.2).}}{8}{table.5}\protected@file@percent }
+\gdef \@abspage@last{8}

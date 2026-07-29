@@ -111,7 +111,7 @@ Routing decisions:
 
 #### 3.3.2 News Context Agent
 
-For THINKING and ESCALATION days, the news context agent queries the FNSPID news store (11.8M articles, 2003-2016, indexed by publication date) with a 7-day trailing window and risk-term filter. It produces a structured `NewsFlags` JSON containing:
+For THINKING and ESCALATION days, the news context agent queries the FNSPID news store (11.8M articles, 2003-2020, indexed by publication date) with a 7-day trailing window and risk-term filter. It produces a structured `NewsFlags` JSON containing:
 - `headline_risk_score` (0-1)
 - `sector_flags` (affected sectors)
 - `macro_flags` (relevant macro themes)
@@ -481,11 +481,11 @@ Future work should expand the event set through additional strategies, longer ba
 
 The agentic system's only test-set event miss (covid_2020 x JT_MOM) warrants specific discussion. The COVID-19 market crash (onset: 2020-02-20) was unprecedented in speed and was preceded by limited English-language financial news about pandemic risk until mid-February 2020. Additionally:
 
-- The FNSPID news store covers 2003-2016; COVID-19 (2020) falls outside its coverage, so the news agent operated with degraded input.
+- The FNSPID news store covers 2003-2020, so news was available (40 articles/day across all 82 trading days). However, early pandemic coverage was dominated by general market volatility headlines rather than COVID-specific risk signals.
 - Three days required thermal-stall reruns with reduced article counts (Deviation 15).
 - The context-cache two-pass design (Deviation 13) may have affected information availability on early days.
 
-The classical HMM detected covid_2020 (with 14-day latency), demonstrating that the return signal alone---without news---was sufficient for eventual detection. The agentic system's miss suggests that when news context is unavailable or degraded, it may underperform the purely statistical approach.
+The classical HMM detected covid_2020 (with 14-day latency), demonstrating that the return signal alone was sufficient for eventual detection. The agentic system's miss suggests that even with news available, the 1.5B-parameter model may lack the reasoning capacity to interpret an unprecedented pandemic shock as a regime change when early headlines are ambiguous.
 
 ### 6.5 Practical Implications
 
@@ -553,7 +553,7 @@ We document all 15 protocol deviations and additional limitations with full tran
 
 - **Single-strategy-family scope:** Both strategies operate on U.S. large-cap equities (S&P 500). Generalisation to other asset classes, geographies, or strategy types is untested.
 
-- **FNSPID temporal coverage:** News store covers 2003-2016; post-2016 windows (volmageddon_2018, covid_2020) operate with degraded or absent news context.
+- **FNSPID density variation:** News store covers 2003-2020, but article density is uneven (~80/day in 2003-2006, ~2,800/day in 2007-2016, ~1,400/day in 2017-2020). Pre-2009 rows are predominantly non-English (Lenta.ru scrape); the NYT Archive API supplements early windows.
 
 ---
 
@@ -704,7 +704,7 @@ monitoring/
 
 | Source | Coverage | Size | Format |
 |--------|----------|------|--------|
-| FNSPID (Financial News) | 2003-2016 | 22 GB (11.8M articles) | Per-year Parquet |
+| FNSPID (Financial News) | 2003-2020 | 22 GB (11.8M articles) | Per-year Parquet |
 | FRED/ALFRED (Macro) | Various | Vintage releases | CSV via API |
 | S&P 500 constituents | 2003-2020 | PIT membership intervals | CSV |
 | Strategy PnL (AL_PCA) | 2003-2015 | Daily returns | CSV |
