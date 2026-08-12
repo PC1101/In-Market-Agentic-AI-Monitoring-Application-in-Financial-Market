@@ -21,7 +21,7 @@ from pathlib import Path
 
 from data import load_prices, load_prices_pit
 from signals import compute_momentum_scores
-from portfolio import construct_portfolio
+from portfolio import construct_portfolio, to_long_only
 from backtest import run_backtest_daily, write_daily_equity_curve
 import universe
 
@@ -36,6 +36,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--survivorship", action="store_true",
                         help="use the biased current-members universe (comparison only)")
+    parser.add_argument("--long-only", action="store_true",
+                        help="use only the long leg (positive weights, renormalised)")
     args = parser.parse_args()
 
     if args.survivorship:
@@ -63,10 +65,20 @@ def main() -> None:
 
     logger.info("Constructing portfolio + simulating daily PnL...")
     weights = construct_portfolio(scores)
-    daily = run_backtest_daily(weights, prices)
+    if args.long_only:
+        logger.info("Filtering to long-only weights...")
+        weights = to_long_only(weights)
+    daily, w_daily = run_backtest_daily(weights, prices, return_weights=True)
+    if args.long_only:
+        out = out.with_name(out.stem + "_long_only" + out.suffix)
     write_daily_equity_curve(daily, str(out))
     logger.info("Wrote %s (%d trading days, final equity %.3f)",
                 out, len(daily), daily["equity"].iloc[-1])
+
+    # Write daily applied weights for post-hoc turnover/cost analysis
+    weights_path = out.with_name(out.stem.replace("equity_curve_daily", "weights_daily") + out.suffix)
+    w_daily.to_csv(weights_path)
+    logger.info("Wrote %s (%d days × %d tickers)", weights_path, *w_daily.shape)
 
 
 if __name__ == "__main__":

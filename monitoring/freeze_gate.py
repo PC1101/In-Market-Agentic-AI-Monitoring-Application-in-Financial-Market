@@ -30,8 +30,8 @@ RESULTS = MONITORING / "results"
 
 # Expected frozen values (preregistration §6.2 + documented deviations)
 _EXPECTED_TRIAGE = {
-    "STRESS_CHEAP": 0.30,
-    "STRESS_THINKING": 0.60,
+    "STRESS_CHEAP": 0.50,       # recalibrated from real vLLM logs (calm mean ≈ 0.55)
+    "STRESS_THINKING": 0.58,    # recalibrated from real vLLM logs (27% calm / 11% event)
     "HIT_Z_THINKING": 2.0,
     "RECENT_DAYS": 3,
     "COVERAGE_DAYS": 7,

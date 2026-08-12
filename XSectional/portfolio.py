@@ -59,3 +59,18 @@ def construct_portfolio(scores: pd.DataFrame) -> pd.DataFrame:
         weights.loc[date, short_tickers] = -1.0 / n_short
 
     return weights
+
+
+def to_long_only(weights: pd.DataFrame) -> pd.DataFrame:
+    """Keep positive weights only; renormalize each row to sum to 1.0.
+
+    Negative (short-leg) weights are set to NA.  Rows where no positive
+    weight exists are left all-NA (the backtest treats them as no-position).
+    """
+    long = weights.copy()
+    long[long <= 0] = pd.NA
+    row_sums = long.sum(axis=1)
+    # Avoid division by zero on all-NA rows
+    row_sums = row_sums.replace(0, pd.NA)
+    long = long.div(row_sums, axis=0)
+    return long

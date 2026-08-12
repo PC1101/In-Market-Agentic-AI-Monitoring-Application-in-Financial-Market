@@ -177,6 +177,99 @@ def _grab_json_after(text: str, marker: str) -> dict:
     return {}
 
 
+class VLLMModel(LocalModel):
+    """Client for a remote vLLM server exposing the OpenAI-compatible API.
+
+    Talks to ``/v1/chat/completions`` with ``response_format: json_object``
+    and ``chat_template_kwargs: {enable_thinking: false}`` (for Qwen3.x models
+    that default to thinking mode). Structured output is enforced server-side
+    via guided decoding when a ``json_schema`` is provided.
+
+    Designed for vast.ai / remote GPU deployments where the model is served by
+    ``vllm serve <model> --port 18000`` and reached via SSH tunnel.
+    """
+
+    RETRY_TIMEOUT: int = 120
+
+    def __init__(self, model: str = "Qwen/Qwen3.5-9B",
+                 host: str = "http://localhost:18000",
+                 temperature: float = 0.0, timeout: float = 300.0,
+                 max_tokens: int = 1024,
+                 json_schema: dict | None = None):
+        self.model = model
+        self.host = host.rstrip("/")
+        self.temperature = temperature
+        self.timeout = timeout
+        self.max_tokens = max_tokens
+        self.json_schema = json_schema
+        self.name = f"vllm:{model}"
+
+    def complete(self, system: str, user: str, json_schema: dict | None = None) -> dict:
+        import urllib.request, urllib.error
+
+        schema = json_schema if json_schema is not None else self.json_schema
+
+        # Build response_format: guided JSON if schema provided, else json_object
+        if schema is not None:
+            response_format = {
+                "type": "json_schema",
+                "json_schema": {"name": "output", "schema": schema},
+            }
+        else:
+            response_format = {"type": "json_object"}
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            "stream": False,
+            "response_format": response_format,
+            # Disable Qwen3.x thinking mode — emit JSON directly
+            "chat_template_kwargs": {"enable_thinking": False},
+        }
+
+        for http_attempt in range(3):
+            timeout = self.timeout if http_attempt == 0 else self.RETRY_TIMEOUT
+            headers = {"Content-Type": "application/json"}
+            _api_key = os.environ.get("VLLM_API_KEY")
+            if _api_key:
+                headers["Authorization"] = f"Bearer {_api_key}"
+            req = urllib.request.Request(
+                f"{self.host}/v1/chat/completions",
+                data=json.dumps(payload).encode(),
+                headers=headers,
+            )
+            try:
+                for attempt in range(2):
+                    with urllib.request.urlopen(req, timeout=timeout) as resp:
+                        body = json.loads(resp.read().decode())
+                    content = (body.get("choices", [{}])[0]
+                               .get("message", {}).get("content", ""))
+                    if not content:
+                        raise urllib.error.URLError(
+                            "vLLM returned empty content; "
+                            f"finish_reason={body.get('choices', [{}])[0].get('finish_reason')}"
+                        )
+                    try:
+                        return self._extract_json(content)
+                    except (json.JSONDecodeError, ValueError):
+                        if attempt == 0:
+                            continue
+                        raise
+            except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as exc:
+                if http_attempt < 2:
+                    import time as _time
+                    _time.sleep(5)  # brief backoff, no runner reset needed
+                    continue
+                raise DeadRunnerError(
+                    f"vLLM server unreachable after {http_attempt+1} attempts: {exc}"
+                )
+
+
 class OllamaModel(LocalModel):
     """Thin client for a locally-served Ollama model. Import-safe; lazy network use.
 
@@ -277,12 +370,15 @@ class OllamaModel(LocalModel):
 def default_model(spec: str | None = None) -> LocalModel:
     """Build a LocalModel from a spec string.
 
-    Specs: "stub" | "ollama" (qwen2.5:1.5b) | "ollama:<model-name>" — everything
-    after the first colon is the model name, so tags work naturally (e.g.
-    "ollama:qwen2.5:1.5b"). Falls back to the MONITOR_MODEL env var, then to the
-    offline stub, so tests and CI never require a running Ollama server.
+    Specs:
+      "stub"                     — offline rule-based stand-in (CI/tests)
+      "ollama"                   — Ollama with default qwen2.5:1.5b
+      "ollama:<model-name>"      — Ollama with a specific model
+      "vllm"                     — vLLM with default Qwen/Qwen3.5-9B @ localhost:18000
+      "vllm:<model>@<host:port>" — vLLM with explicit model and endpoint
 
-    Default Ollama model is ``qwen2.5:1.5b`` (preregistration §6.2).
+    Falls back to the MONITOR_MODEL env var, then to the offline stub, so tests
+    and CI never require a running server.
     """
     spec = spec or os.environ.get("MONITOR_MODEL", "stub")
     if spec in ("stub", "offline"):
@@ -294,7 +390,17 @@ def default_model(spec: str | None = None) -> LocalModel:
         if not name:
             raise ValueError("empty ollama model name; expected e.g. 'ollama:qwen2.5:1.5b'")
         return OllamaModel(model=name)
-    raise ValueError(f"unknown model spec {spec!r}; use 'stub', 'ollama', or 'ollama:<name>'")
+    if spec == "vllm":
+        return VLLMModel()
+    if spec.startswith("vllm:"):
+        rest = spec[len("vllm:"):]
+        if "@" in rest:
+            model_name, host = rest.rsplit("@", 1)
+            if not host.startswith("http"):
+                host = f"http://{host}"
+            return VLLMModel(model=model_name, host=host)
+        return VLLMModel(model=rest)
+    raise ValueError(f"unknown model spec {spec!r}; use 'stub', 'ollama:<name>', or 'vllm:<model>@<host:port>'")
 
 
 def make_model(spec: str) -> LocalModel:

@@ -1,0 +1,31 @@
+{
+  "AL_PCA + Agent": {
+    "cagr": 0.133064,
+    "ann_vol": 0.134738,
+    "sharpe": 0.9876,
+    "max_dd": -0.177527,
+    "calmar": 0.7495,
+    "terminal_value": 15508920.08,
+    "total_return": 14.50892,
+    "alpha_vs_benchmark": 0.025965
+  },
+  "AL_PCA (unmanaged)": {
+    "cagr": 0.146077,
+    "ann_vol": 0.198243,
+    "sharpe": 0.7369,
+    "max_dd": -0.483547,
+    "calmar": 0.3021,
+    "terminal_value": 19925768.55,
+    "total_return": 18.925769,
+    "alpha_vs_benchmark": 0.038978
+  },
+  "SPY B&H": {
+    "cagr": 0.107099,
+    "ann_vol": 0.187726,
+    "sharpe": 0.5705,
+    "max_dd": -0.551894,
+    "calmar": 0.1941,
+    "terminal_value": 9320792.41,
+    "total_return": 8.324983
+  }
+}

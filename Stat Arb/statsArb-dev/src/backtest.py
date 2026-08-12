@@ -17,7 +17,7 @@ class bt(object):
 
 
         ## PCA portfolios returns
-        self.pca_port_ret = pd.read_csv("results/pca_factoring/ret_pca_port.csv", index_col=['Date'], parse_dates=True).sort_index()
+        self.pca_port_ret = pd.read_csv("results/pca_factoring/ret_pca_port_pit.csv", index_col=['Date'], parse_dates=True).sort_index()
 
         self.st_dt = st_dt
         self.ed_dt = ed_dt

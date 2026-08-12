@@ -1,0 +1,31 @@
+{
+  "JT_MOM + Agent": {
+    "cagr": 0.117594,
+    "ann_vol": 0.160649,
+    "sharpe": 0.732,
+    "max_dd": -0.225187,
+    "calmar": 0.5222,
+    "terminal_value": 15652840.57,
+    "total_return": 14.724036,
+    "alpha_vs_benchmark": 0.02615
+  },
+  "JT_MOM (unmanaged)": {
+    "cagr": 0.108373,
+    "ann_vol": 0.207121,
+    "sharpe": 0.5232,
+    "max_dd": -0.546621,
+    "calmar": 0.1983,
+    "terminal_value": 12747376.64,
+    "total_return": 11.805356,
+    "alpha_vs_benchmark": 0.016929
+  },
+  "SPY B&H": {
+    "cagr": 0.091444,
+    "ann_vol": 0.191705,
+    "sharpe": 0.477,
+    "max_dd": -0.551894,
+    "calmar": 0.1657,
+    "terminal_value": 8672258.3,
+    "total_return": 7.741712
+  }
+}

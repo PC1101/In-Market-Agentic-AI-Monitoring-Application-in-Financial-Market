@@ -194,13 +194,13 @@ def run_window(series: pd.Series, window, store: NewsStore | None, model,
 
         n_recent = sum(_recent(a, day, RECENT_DAYS) for a in alarms_by_det.values())
 
-        # FinBERT stress score: max negative-sentiment probability across today's risk articles
+        # FinBERT stress score: mean negative-sentiment probability across today's risk articles
         if finbert_cache is not None:
             stress = finbert_cache.get(day_str, 0.0)
         else:
             global _daily_max_stress
             if _daily_max_stress is None:
-                from news.finbert import daily_max_stress as _dms
+                from news.finbert import daily_mean_stress as _dms
                 _daily_max_stress = _dms
             day_risk = filter_news(store.query(day - pd.Timedelta(days=1), day))
             if not day_risk.empty:

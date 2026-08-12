@@ -52,13 +52,13 @@ def sector_start_date(prices_file_path):
     return idx.min()
 
 
-def run_sector(etf, prices_file_path, st_dt, ed_dt, defactoring, kappa_min, cost, sl, weighting):
+def run_sector(etf, prices_file_path, st_dt, ed_dt, defactoring, kappa_min, cost, sl, weighting, long_only=False):
     """Run one sector sleeve; return (daily_combined_return, trade_blotter) or (None, None)."""
     model = backtest.bt(
         prices_file_path=prices_file_path, etf_name=etf, st_dt=st_dt, ed_dt=ed_dt,
         defactoring=defactoring, kappa_min=kappa_min, performance_only=True, progress=True,
     )
-    model.run(weighting_scheme=weighting, sl=sl, long_only=False,
+    model.run(weighting_scheme=weighting, sl=sl, long_only=long_only,
               transaction_cost=(cost, cost))
 
     sector_ret = model.port_ret["cum_ret"].rename(etf)
@@ -84,6 +84,8 @@ def main():
                    help="Per-side transaction cost fraction (default 0 = frictionless).")
     p.add_argument("--sl", type=float, default=-0.10, help="Stop-loss (default -0.10).")
     p.add_argument("--tag", default=None, help="Label for the output sub-folder.")
+    p.add_argument("--long-only", action="store_true",
+                   help="Run long-only strategy (no shorts).")
     p.add_argument("--pit", action="store_true",
                    help="Use point-in-time sector sleeves (data/pit/{etf}_pit.csv, "
                         "built by scripts/build_pit_sleeves.py) instead of the 2020 "
@@ -127,7 +129,8 @@ def main():
         print(f"\n--- {s.upper()} ---")
         try:
             ret, trades = run_sector(s, cfg["prices_file_path"][s], args.start, args.end,
-                                     args.defactoring, kappa_min, args.cost, args.sl, weighting)
+                                     args.defactoring, kappa_min, args.cost, args.sl, weighting,
+                                     long_only=args.long_only)
         except Exception as exc:  # robust: one bad sector shouldn't kill the run
             print(f"  skipped {s}: {exc}")
             continue

@@ -38,7 +38,8 @@ def run_backtest(weights: pd.DataFrame, prices: pd.DataFrame) -> pd.Series:
     return portfolio_returns.dropna()
 
 
-def run_backtest_daily(weights: pd.DataFrame, prices: pd.DataFrame) -> pd.DataFrame:
+def run_backtest_daily(weights: pd.DataFrame, prices: pd.DataFrame,
+                       return_weights: bool = False):
     """Simulate *daily* long-short portfolio PnL from monthly weights and daily prices.
 
     The month-end weights are held through the following month: at each trading day we
@@ -54,12 +55,14 @@ def run_backtest_daily(weights: pd.DataFrame, prices: pd.DataFrame) -> pd.DataFr
     Args:
         weights: monthly portfolio weights (month-end dates x tickers); NA = not held.
         prices:  daily adjusted-close prices (daily dates x tickers).
+        return_weights: if True, also return the applied daily weight matrix.
 
     Returns:
         DataFrame indexed by trading date ("Date") with columns:
             port_ret  — daily portfolio return
             equity    — cumulative equity (starts at 1.0 on the first traded day)
             drawdown  — running drawdown from the equity peak (<= 0)
+        If return_weights is True, returns (DataFrame, w_daily_DataFrame).
     """
     # fill_method=None: do not forward-fill stale/pre-listing prices into fake 0% returns.
     daily_returns = prices.pct_change(fill_method=None)
@@ -76,13 +79,19 @@ def run_backtest_daily(weights: pd.DataFrame, prices: pd.DataFrame) -> pd.DataFr
     # Trim leading days before the first active (non-zero) weight row.
     active = (w_daily.fillna(0.0).abs().sum(axis=1) > 0)
     if active.any():
-        port_ret = port_ret.loc[active.idxmax():]
+        first = active.idxmax()
+        port_ret = port_ret.loc[first:]
+        w_daily = w_daily.loc[first:]
 
     equity = (1.0 + port_ret).cumprod()
     drawdown = equity / equity.cummax() - 1.0
 
     out = pd.DataFrame({"port_ret": port_ret, "equity": equity, "drawdown": drawdown})
     out.index.name = "Date"
+
+    if return_weights:
+        w_daily.index.name = "Date"
+        return out, w_daily
     return out
 
 

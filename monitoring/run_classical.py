@@ -32,7 +32,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RESULTS = Path(__file__).resolve().parent / "results"
 
 STAT_ARB = ROOT / "Stat Arb" / "statsArb-dev" / "results" / "full_universe"
-JT_DAILY = ROOT / "XSectional" / "results" / "equity_curve_daily.csv"
+JT_DAILY = ROOT / "XSectional" / "results" / "equity_curve_daily_long_only.csv"
 
 def _prefer_pit(tag: str):
     """Use the point-in-time curve for a window tag if built, else the 2020-snapshot one."""
@@ -43,10 +43,8 @@ def _prefer_pit(tag: str):
 # Each strategy is a list of continuous daily PnL curves.
 STRATEGY_CURVES = {
     "AL_PCA": [
-        # baseline_2007_2016_pit not built (PIT sleeves absent; china_deval_2015 + later
-        # test windows are JT_MOM-only — documented limitation in D1_audit_report.md).
-        _prefer_pit("baseline_2007_2015"),
-        _prefer_pit("calm_2004_2006"),
+        # PIT PCA long-only, full period (2004-2025): consolidated dataset, all 12 windows.
+        STAT_ARB / "pit_pca_long_only" / "equity_curve.csv",
     ],
     "JT_MOM": [JT_DAILY],
 }

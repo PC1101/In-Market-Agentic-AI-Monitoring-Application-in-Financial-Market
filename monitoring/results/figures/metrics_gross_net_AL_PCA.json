@@ -1,0 +1,51 @@
+{
+  "Managed (Gross)": {
+    "cagr": 0.140606,
+    "ann_vol": 0.134754,
+    "sharpe": 1.0434,
+    "max_dd": -0.176105,
+    "calmar": 0.7984,
+    "terminal_value": 17939482.81,
+    "total_return": 16.939483,
+    "alpha_vs_benchmark": 0.033507
+  },
+  "Managed (Net)": {
+    "cagr": 0.121383,
+    "ann_vol": 0.13473,
+    "sharpe": 0.9009,
+    "max_dd": -0.182875,
+    "calmar": 0.6638,
+    "terminal_value": 12354473.73,
+    "total_return": 11.354474,
+    "alpha_vs_benchmark": 0.014284
+  },
+  "Unmanaged (Gross)": {
+    "cagr": 0.157378,
+    "ann_vol": 0.198243,
+    "sharpe": 0.7939,
+    "max_dd": -0.476016,
+    "calmar": 0.3306,
+    "terminal_value": 24713357.71,
+    "total_return": 23.713358,
+    "alpha_vs_benchmark": 0.050279
+  },
+  "Unmanaged (Net)": {
+    "cagr": 0.132294,
+    "ann_vol": 0.198241,
+    "sharpe": 0.6673,
+    "max_dd": -0.491086,
+    "calmar": 0.2694,
+    "terminal_value": 15279489.46,
+    "total_return": 14.279489,
+    "alpha_vs_benchmark": 0.025195
+  },
+  "SPY B&H": {
+    "cagr": 0.107099,
+    "ann_vol": 0.187726,
+    "sharpe": 0.5705,
+    "max_dd": -0.551894,
+    "calmar": 0.1941,
+    "terminal_value": 9320792.41,
+    "total_return": 8.324983
+  }
+}
