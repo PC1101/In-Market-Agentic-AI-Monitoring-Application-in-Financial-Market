@@ -261,21 +261,34 @@ Each phase is independently reviewable and leaves the repo green.
 
 ---
 
-## 11. Open decisions to confirm
+## 11. Open decisions — RESOLVED 2026-08-19
 
-*(These are the points I could not recover from the prior session — please confirm/correct
-before `writing-plans`.)*
+*(Resolved with the user after data-source research. These lock the Phase 3/4 providers.)*
 
-1. **ASX 200 constituent source** — which historical, delisted-inclusive constituent
-   dataset? (e.g. a data vendor, or reconstructed from index change announcements.)
-2. **Global energy universe scope** — equities-only first, or equities + energy futures
-   from day one?
-3. **News providers** — what AU news source and what global-energy news source replace
-   FNSPID? Do we have licensed/point-in-time access?
-4. **Macro sources** — RBA/ABS for ASX; EIA/IEA + which commodity curves for energy?
-5. **Window lists + onsets** — confirm the event/calm windows per new market (§5, §6).
-6. **Strategies** — reuse the *same* AL PCA + JT templates on the new universes (assumed),
-   or market-appropriate strategies?
-7. **vast.ai budget** — max $/hr and max $/run cost ceiling for the teardown guard.
-8. **Doc location/name** — confirm `docs/superpowers/specs/` is the intended home (matches
-   task #4) and this filename is acceptable.
+1. **ASX 200 constituent source** ✅ **Free-first, Norgate fallback.** Reconstruct PIT
+   membership from free S&P/ASX quarterly rebalance announcements (aggregated at
+   marketindex.com.au) + free delisted-price archives (Kaggle "Arandkei", GitHub), then run
+   a **survivorship gating test** — a known ASX drawdown must be *invisible* on a
+   survivor-only universe (the ASX analogue of the US 2007-meltdown check). **If it fails the
+   gate, buy Norgate Data Platinum (~USD 53/mo: PIT constituents incl. delisted + delisted
+   prices + Python API).** The gating test is the go/no-go for admitting free ASX data.
+2. **Global energy universe** ✅ **Equities-only, S&P Global 1200 Energy** (the index iShares
+   IXC tracks; ~66 global large-caps). Reuses existing PnL machinery; energy futures deferred.
+3. **News providers** ✅ **GDELT** for *both* new markets — free, global, point-in-time
+   timestamps, themes/sentiment, multi-year history. Consumed by the existing
+   filter→triage→FinBERT stack. Needs an ingestion adapter that writes the same per-year
+   parquet schema as the FNSPID store (`date, ticker, title, summary, publisher, url`).
+4. **Macro / commodity** ✅ **Reuse + extend FRED/ALFRED.** Energy commodity *prices* already
+   available via the existing FRED/ALFRED integration — add series IDs `DCOILWTICO` (WTI),
+   `DCOILBRENTEU` (Brent), `DHHNGSP` (Henry Hub natgas) to the macro fetch list. Add **EIA
+   API** (free, key required) for inventories/supply. AU macro via **RBA + ABS.Stat** (free,
+   community Python access). *(Default accepted; revisit if energy needs deeper commodity data.)*
+5. **Window lists + onsets** 🟡 **Tentative — confirm during Phase 3/4 build.** ASX: GFC 2008,
+   2015 commodity/China selloff, COVID 2020 (+ 2 calm). Energy: 2014–16 oil crash, 2020
+   negative WTI, 2022 energy spike (+ 2 calm). Each needs a ground-truth onset date like
+   `windows.py`.
+6. **Strategies** ✅ **Reuse the AL PCA + JT templates** refit per market — keeps the H2/H3
+   cross-market comparison clean and reuses existing code.
+7. **vast.ai budget** ✅ **$0.50/hr** hourly cap (enforced in `scripts/vast/`). Optional
+   per-run ceiling not set — hourly cap governs.
+8. **Doc location/name** ✅ `docs/superpowers/specs/` confirmed as home.
