@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -78,6 +79,86 @@ def _ssh_run(inst: dict, remote_cmd: str, dry_run: bool) -> None:
     res = subprocess.run(ssh, text=True)
     if res.returncode != 0:
         raise RuntimeError(f"remote job failed ({res.returncode})")
+
+
+def _ssh_url(instance_id, dry_run: bool) -> tuple[str, int]:
+    """Resolve (host, port) for ssh via `vastai ssh-url` (handles proxy/direct)."""
+    if dry_run:
+        return ("ssh.example.vast.ai", 12345)
+    out = _vastai("ssh-url", str(instance_id), dry_run=False, capture=True) or ""
+    # Format: ssh://root@ssh5.vast.ai:12345
+    m = re.search(r"root@([^:]+):(\d+)", out.strip())
+    if not m:
+        raise RuntimeError(f"could not parse ssh-url: {out!r}")
+    return (m.group(1), int(m.group(2)))
+
+
+def _ssh_exec_retry(instance_id, remote_cmd: str, dry_run: bool,
+                    attempts: int = 12, delay_s: int = 10) -> str:
+    """SSH a command with retries (the instance sshd lags 'running' by ~1 min)."""
+    host, port = _ssh_url(instance_id, dry_run)
+    ssh = ["ssh", "-p", str(port), "-o", "StrictHostKeyChecking=no",
+           "-o", "UserKnownHostsFile=/dev/null", "-o", "ConnectTimeout=10",
+           f"root@{host}", remote_cmd]
+    if dry_run:
+        print(f"  [dry-run] {' '.join(ssh)}")
+        return "SMOKE_OK"
+    last = ""
+    for i in range(attempts):
+        res = subprocess.run(ssh, capture_output=True, text=True)
+        if res.returncode == 0:
+            return res.stdout
+        last = (res.stderr or res.stdout or "").strip().splitlines()[-1:] or [""]
+        print(f"  ssh not ready (try {i+1}/{attempts}): {last[0][:80]}")
+        time.sleep(delay_s)
+    raise RuntimeError(f"ssh never succeeded after {attempts} tries: {last}")
+
+
+def run_smoke(max_price: float, dry_run: bool) -> None:
+    """Validate harness mechanics on real hardware, then destroy. ~$0.05-0.15."""
+    tag = vastlib.PROJECT_TAG
+    offers = search_offers(max_price, dry_run)
+    offer = vastlib.pick_cheapest_offer(offers, max_price)
+    if offer is None:
+        raise SystemExit(f"no offer at or under ${max_price}/hr")
+    price = vastlib.assert_within_budget(offer, max_price)
+    print(f"→ smoke: selected offer {offer['id']} ({offer.get('gpu_name','?')}) at ${price}/hr")
+
+    instance_id = None
+    try:
+        out = _vastai("create", "instance", str(offer["id"]),
+                      "--image", "ollama/ollama:latest", "--disk", "12",
+                      "--label", tag, "--onstart-cmd", "sleep infinity",
+                      "--ssh", "--direct", "--raw", dry_run=dry_run, capture=True)
+        instance_id = 999999 if dry_run else (json.loads(out).get("new_contract")
+                                              or json.loads(out).get("id"))
+        print(f"→ created instance {instance_id}; waiting for it to run…")
+        if not dry_run:
+            _wait_running(instance_id)
+        smoke_cmd = ("echo SMOKE_START; uname -srm; "
+                     "(nvidia-smi -L || echo no-nvidia); "
+                     "(ollama --version || echo no-ollama); echo SMOKE_OK")
+        result = _ssh_exec_retry(instance_id, smoke_cmd, dry_run)
+        print("── remote output ──")
+        print(result.strip())
+        if "SMOKE_OK" not in result:
+            raise RuntimeError("smoke marker missing from remote output")
+        print("✓ smoke PASSED — provision → ssh → run → (destroying) all work")
+    finally:
+        if instance_id is not None:
+            print("→ destroy instance (cost guard)")
+            _vastai("destroy", "instance", str(instance_id), "-y", dry_run=dry_run)
+
+
+def _wait_running(instance_id, timeout_s: int = 600) -> None:
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        out = _vastai("show", "instances", "--raw", dry_run=False, capture=True)
+        for inst in json.loads(out):
+            if inst.get("id") == instance_id and inst.get("actual_status") == "running":
+                return
+        time.sleep(10)
+    raise TimeoutError(f"instance {instance_id} not running within {timeout_s}s")
 
 
 def wait_until_ready(tag: str, dry_run: bool, timeout_s: int = 600) -> dict:
@@ -157,6 +238,8 @@ def main() -> None:
                     help="print every vastai command; spend nothing")
     ap.add_argument("--yes", action="store_true",
                     help="authorise real provisioning (required when not --dry-run)")
+    ap.add_argument("--smoke", action="store_true",
+                    help="harness validation: provision cheapest GPU, ssh, verify, destroy")
     args = ap.parse_args()
 
     if not args.dry_run and not args.yes:
@@ -164,6 +247,12 @@ def main() -> None:
             "Refusing to provision without authorisation. Re-run with --dry-run to preview, "
             "or --yes to authorise real spend (capped at ${:.2f}/hr).".format(args.max_price)
         )
+
+    if args.smoke:
+        print(f"vast.ai SMOKE TEST — cap ${args.max_price}/hr"
+              + (" [DRY RUN]" if args.dry_run else ""))
+        run_smoke(max_price=args.max_price, dry_run=args.dry_run)
+        return
 
     job = yaml.safe_load(Path(args.job).read_text()) if Path(args.job).exists() else {}
     print(f"vast.ai launch — cap ${args.max_price}/hr — job: {args.job}"

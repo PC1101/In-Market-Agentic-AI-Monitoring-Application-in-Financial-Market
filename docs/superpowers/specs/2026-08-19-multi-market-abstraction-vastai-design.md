@@ -235,12 +235,14 @@ scripts/vast/
    wiring behind the provider interfaces; `--market` flag on both entry points; **US
    classical output verified byte-identical** to the pre-refactor golden baseline; full
    monitoring suite green. See `docs/superpowers/plans/2026-08-19-phase1-provider-abstraction.md`.
-2. **vast.ai harness** 🟡 *(built 2026-08-19; live validation pending)* — `scripts/vast/`
-   with `vastlib.py` (cost-guard core, 9 tests), `launch.py` (search→budget-gate→provision→
-   run→pull→always-destroy), `teardown.py` (stray sweep), `job.yaml`, `Dockerfile`, `README`.
-   $0.50/hr cap enforced 4 ways; `--dry-run` verified end-to-end; nothing spends without
-   `--yes`. **Remaining:** live smoke test on a real GPU (needs vast.ai API key + ssh key on
-   the host) and the one-US-window parity re-run.
+2. **vast.ai harness** ✅ *(done 2026-08-19; live-validated)* — `scripts/vast/` with
+   `vastlib.py` (cost-guard core, 10 tests), `launch.py` (search→budget-gate→provision→run→
+   pull→always-destroy, + `--smoke` mode), `teardown.py` (stray sweep), `job.yaml`,
+   `Dockerfile`, `README`. $0.50/hr cap enforced 4 ways. **Live smoke test PASSED on real
+   hardware**: provisioned an RTX 3060 at $0.052/hr, SSH'd in, verified GPU + ollama runtime,
+   auto-destroyed; ~1m50s, <1¢, zero stray instances. The one-US-window parity re-run is
+   deferred until the US curve data + FNSPID store are present on a run host (this backup
+   machine lacks them); the mechanics are proven.
 3. **ASX 200 market** — providers, PIT stores, windows, recalibrate detectors, full run.
 4. **Global energy market** — providers incl. commodity macro, windows, full run.
 5. **Cross-market analysis** — extend `significance.py`/reporting to H1/H2/H3 across markets.
