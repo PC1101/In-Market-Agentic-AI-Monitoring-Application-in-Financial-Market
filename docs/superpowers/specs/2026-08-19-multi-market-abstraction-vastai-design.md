@@ -272,8 +272,15 @@ Each phase is independently reviewable and leaves the repo green.
    survivor-only universe (the ASX analogue of the US 2007-meltdown check). **If it fails the
    gate, buy Norgate Data Platinum (~USD 53/mo: PIT constituents incl. delisted + delisted
    prices + Python API).** The gating test is the go/no-go for admitting free ASX data.
-2. **Global energy universe** ✅ **Equities-only, S&P Global 1200 Energy** (the index iShares
-   IXC tracks; ~66 global large-caps). Reuses existing PnL machinery; energy futures deferred.
+2. **Global energy universe** ✅ **Equities-only — curated stable megacap universe** (refined
+   2026-08-19 after spike). The *full* S&P Global 1200 Energy with survivorship-free PIT
+   membership hits the same paywall as ASX, but energy is dominated by a small, very stable
+   megacap set that rarely delists — so a **curated fixed universe of ~30-40 major global
+   energy names** (US-listed + ADRs) is free (yfinance, verified: full 2007-2020 daily
+   coverage, no gaps, no key) and methodologically defensible with a documented survivorship
+   caveat (the few exits — BG→Shell, Anadarko→Oxy, Pioneer/Marathon→2024 M&A — are nameable).
+   Regime signal is commodity-driven (free FRED curves), so the universe need only be
+   representative, not index-exact. Futures deferred.
 3. **News providers** ✅ **GDELT** for *both* new markets — free, global, point-in-time
    timestamps, themes/sentiment, multi-year history. Consumed by the existing
    filter→triage→FinBERT stack. Needs an ingestion adapter that writes the same per-year
