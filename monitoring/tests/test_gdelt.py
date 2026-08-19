@@ -60,6 +60,39 @@ def test_build_query_ors_terms_and_quotes_multiword():
     assert " OR " in q
 
 
+def test_store_build_and_provider_roundtrip(tmp_path, monkeypatch):
+    """build_gdelt_store -> per-year parquet -> NewsStore/EnergyNews read-back.
+
+    Mocks the network fetch (proven live separately) so the store-write and the
+    exact FNSPID-schema read path are validated deterministically.
+    """
+    from providers.energy.news import EnergyNews
+
+    fake = {
+        "XOM": [
+            {"url": "u1", "title": "Exxon cuts capex", "seendate": "20200315T120000Z", "domain": "reuters.com", "language": "English"},
+            {"url": "u2", "title": "Exxon rallies", "seendate": "20200402T120000Z", "domain": "bloomberg.com", "language": "English"},
+        ],
+        "CVX": [
+            {"url": "u3", "title": "Chevron trims budget", "seendate": "20200320T120000Z", "domain": "wsj.com", "language": "English"},
+        ],
+    }
+    monkeypatch.setattr(gdelt, "fetch", lambda q, s, e, **kw: fake["XOM"] if "XOM" in q else fake["CVX"])
+
+    counts = gdelt.build_gdelt_store(
+        {"XOM": ["ExxonMobil", "XOM"], "CVX": ["Chevron", "CVX"]},
+        "2020-03-01", "2020-04-30", tmp_path, throttle_s=0)
+    assert counts.get("2020") == 3
+
+    df = EnergyNews(root=tmp_path).query("2020-03-01", "2020-04-30")
+    assert list(df.columns) == list(COLS)
+    assert len(df) == 3
+    assert set(df["ticker"]) == {"XOM", "CVX"}
+    # Ticker filter (used by the agentic layer) works through the whole chain.
+    xom = EnergyNews(root=tmp_path).query("2020-03-01", "2020-04-30", tickers=["XOM"])
+    assert len(xom) == 2 and (xom["ticker"] == "XOM").all()
+
+
 def test_english_only_filter():
     arts = [
         {"url": "u1", "title": "t1", "seendate": "20200305T010000Z", "domain": "d1", "language": "Spanish"},
