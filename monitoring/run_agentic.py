@@ -284,6 +284,7 @@ def run_window(series: pd.Series, window, store: NewsStore | None, model,
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--window", default="quant_meltdown_2007")
+    ap.add_argument("--market", default="sp500", help="market profile key (default: sp500)")
     ap.add_argument("--strategy", default="AL_PCA", choices=list(STRATEGY_CURVES))
     ap.add_argument("--model", default=None, help="stub | ollama | ollama:<name> (default: MONITOR_MODEL env or stub)")
     ap.add_argument("--condition", default="A", choices=["A", "B"],
@@ -295,6 +296,16 @@ def main() -> None:
     ap.add_argument("--context-cache", default=None,
                     help="path to pre-computed context JSON (avoids heavy parquet I/O)")
     args = ap.parse_args()
+
+    # Validate the requested market. Phase 1 wires sp500 end-to-end; other markets
+    # register providers but curve routing via profile.pnl lands in Phase 3.
+    from config.profiles import get_profile
+    profile = get_profile(args.market)
+    if profile.key != "sp500":
+        raise SystemExit(
+            f"--market {profile.key}: only 'sp500' is wired end-to-end in Phase 1 "
+            f"(generic routing via profile.pnl/news/macro lands in Phase 3)."
+        )
 
     window = get_window(args.window)
     curve = next((p for p in STRATEGY_CURVES[args.strategy]

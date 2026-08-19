@@ -26,3 +26,22 @@ def test_unknown_market_fails_closed():
     )
     assert out.returncode != 0
     assert "asx200" in (out.stderr + out.stdout)
+
+
+def test_agentic_sp500_accepts_market_flag():
+    out = subprocess.run(
+        [sys.executable, "run_agentic.py", "--market", "sp500",
+         "--window", "quant_meltdown_2007", "--strategy", "AL_PCA", "--model", "stub"],
+        cwd=MON, capture_output=True, text=True,
+    )
+    assert out.returncode == 0, out.stderr
+
+
+def test_agentic_unknown_market_fails_closed():
+    out = subprocess.run(
+        [sys.executable, "run_agentic.py", "--market", "energy",
+         "--window", "quant_meltdown_2007", "--strategy", "AL_PCA", "--model", "stub"],
+        cwd=MON, capture_output=True, text=True,
+    )
+    assert out.returncode != 0
+    assert "energy" in (out.stderr + out.stdout)
