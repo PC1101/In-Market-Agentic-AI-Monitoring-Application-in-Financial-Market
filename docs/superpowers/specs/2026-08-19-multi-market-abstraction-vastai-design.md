@@ -231,8 +231,10 @@ scripts/vast/
 
 ## 9. Rollout phases
 
-1. **Refactor US to providers** — extract today's FNSPID/FRED/AL/JT code behind the
-   interfaces; prove golden-path bit-identical. *No new market yet.*
+1. **Refactor US to providers** ✅ *(done 2026-08-19)* — extracted the FNSPID/FRED/AL/JT
+   wiring behind the provider interfaces; `--market` flag on both entry points; **US
+   classical output verified byte-identical** to the pre-refactor golden baseline; full
+   monitoring suite green. See `docs/superpowers/plans/2026-08-19-phase1-provider-abstraction.md`.
 2. **vast.ai harness** — Dockerfile + launch/teardown, smoke test, re-run one US window on
    a rented GPU to validate parity.
 3. **ASX 200 market** — providers, PIT stores, windows, recalibrate detectors, full run.
