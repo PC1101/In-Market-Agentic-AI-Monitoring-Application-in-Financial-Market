@@ -73,3 +73,9 @@ def test_project_instances_filters_by_tag():
 def test_default_cap_is_50_cents():
     # The agreed budget ceiling; guards against accidental edits.
     assert vastlib.MAX_PRICE_PER_HOUR == 0.50
+
+
+def test_vastai_bin_resolves_to_a_path():
+    # Returns a non-empty string ending in the CLI name (venv path or PATH or bare).
+    b = vastlib.vastai_bin()
+    assert isinstance(b, str) and b.endswith("vastai")

@@ -14,6 +14,10 @@ Cost guard (defence in depth):
 """
 from __future__ import annotations
 
+import os
+import shutil
+import sys
+
 #: Agreed budget ceiling (USD per hour). See design §7 / §11.7.
 MAX_PRICE_PER_HOUR = 0.50
 
@@ -70,3 +74,16 @@ def assert_within_budget(offer: dict, max_price: float = MAX_PRICE_PER_HOUR) -> 
 def project_instances(instances: list[dict], tag: str = PROJECT_TAG) -> list[dict]:
     """Instances labelled with our project tag (the ones teardown may destroy)."""
     return [i for i in instances if i.get("label") == tag]
+
+
+def vastai_bin() -> str:
+    """Resolve the vastai executable.
+
+    The CLI is installed in this project's venv, which is usually NOT on PATH.
+    Prefer the vastai next to the running interpreter (the venv), then PATH,
+    then fall back to the bare name so error messages stay readable.
+    """
+    candidate = os.path.join(os.path.dirname(sys.executable), "vastai")
+    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+        return candidate
+    return shutil.which("vastai") or "vastai"

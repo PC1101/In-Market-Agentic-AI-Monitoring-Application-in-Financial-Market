@@ -23,7 +23,7 @@ import vastlib  # noqa: E402
 
 
 def _vastai(*args: str, capture: bool = False) -> str | None:
-    res = subprocess.run(["vastai", *args], capture_output=capture, text=True)
+    res = subprocess.run([vastlib.vastai_bin(), *args], capture_output=capture, text=True)
     if res.returncode != 0:
         raise RuntimeError(f"vastai failed: {' '.join(args)}\n{res.stderr or ''}")
     return res.stdout if capture else None

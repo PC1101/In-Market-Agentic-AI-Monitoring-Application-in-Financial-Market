@@ -45,8 +45,8 @@ DEFAULT_DISK_GB = 20
 
 def _vastai(*args: str, dry_run: bool, capture: bool = False) -> str | None:
     """Run a `vastai` subcommand. In dry-run, print and skip (returns None)."""
-    cmd = ["vastai", *args]
-    printable = " ".join(cmd)
+    cmd = [vastlib.vastai_bin(), *args]
+    printable = " ".join(["vastai", *args])
     if dry_run:
         print(f"  [dry-run] {printable}")
         return None
