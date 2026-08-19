@@ -31,25 +31,9 @@ from agentic import as_of_context, LocalModel, RunLogger, run_supervisor, make_m
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS = Path(__file__).resolve().parent / "results"
 
-STAT_ARB = ROOT / "Stat Arb" / "statsArb-dev" / "results" / "full_universe"
-JT_DAILY = ROOT / "XSectional" / "results" / "equity_curve_daily.csv"
-
-def _prefer_pit(tag: str):
-    """Use the point-in-time curve for a window tag if built, else the 2020-snapshot one."""
-    pit = STAT_ARB / f"{tag}_pit" / "equity_curve.csv"
-    return pit if pit.exists() else STAT_ARB / tag / "equity_curve.csv"
-
-
-# Each strategy is a list of continuous daily PnL curves.
-STRATEGY_CURVES = {
-    "AL_PCA": [
-        # baseline_2007_2016_pit not built (PIT sleeves absent; china_deval_2015 + later
-        # test windows are JT_MOM-only — documented limitation in D1_audit_report.md).
-        _prefer_pit("baseline_2007_2015"),
-        _prefer_pit("calm_2004_2006"),
-    ],
-    "JT_MOM": [JT_DAILY],
-}
+# Strategy curve paths are defined once in the sp500 provider (single source of
+# truth; mirrors the original _prefer_pit logic exactly). See providers/sp500/pnl.py.
+from providers.sp500.pnl import STRATEGY_CURVES  # noqa: E402
 
 
 def _hmm_training_returns(curve_paths) -> "pd.Series | None":
@@ -156,7 +140,20 @@ def main():
     ap.add_argument("--model", default="stub",
                     help="agent model spec: 'stub' (default, deterministic/CI-safe) "
                          "or 'ollama:<name>' e.g. 'ollama:llama3.2:3b'")
+    ap.add_argument("--market", default="sp500",
+                    help="market profile key (default: sp500)")
     args = ap.parse_args()
+
+    # Validate the requested market. Phase 1 wires sp500 end-to-end; other markets
+    # register their providers but curve routing via profile.pnl lands in Phase 3.
+    from config.profiles import get_profile
+    profile = get_profile(args.market)
+    if profile.key != "sp500":
+        raise SystemExit(
+            f"--market {profile.key}: only 'sp500' is wired end-to-end in Phase 1 "
+            f"(generic curve routing via profile.pnl lands in Phase 3)."
+        )
+
     agent_model = make_model(args.model)
 
     RESULTS.mkdir(parents=True, exist_ok=True)
