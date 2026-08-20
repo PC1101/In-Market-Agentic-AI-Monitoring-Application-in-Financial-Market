@@ -67,7 +67,16 @@ def main() -> None:
     scores = compute_momentum_scores(prices)
 
     logger.info("Constructing portfolio + simulating daily PnL (no membership mask)...")
-    weights = construct_portfolio(scores)
+    # The shared config defaults (20% quantiles, min 10/leg) are tuned for the
+    # ~500-name S&P universe; against the curated ~34-name energy universe they
+    # cap every month at 6 long / 6 short candidates, below the 10-stock floor,
+    # so every rebalance gets skipped and the curve is degenerate (flat, zero
+    # PnL). Widen the quantiles and lower the per-leg floor for this smaller,
+    # fixed universe: 30% of 34 names ~= 10 per leg, a real long/short book.
+    # This does not touch config.py or the S&P 500 runner's behavior.
+    weights = construct_portfolio(
+        scores, top_quantile=0.30, bottom_quantile=0.30, min_stocks_per_leg=6
+    )
     daily = run_backtest_daily(weights, prices)
 
     out = RESULTS / "equity_curve_energy.csv"

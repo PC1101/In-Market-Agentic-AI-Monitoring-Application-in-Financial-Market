@@ -12,3 +12,10 @@ def test_energy_jt_curve_has_valid_schema():
     assert list(df.columns) == list(REQUIRED_COLUMNS)
     assert len(df) > 250
     assert df["equity"].iloc[-1] > 0
+    # Guard against a degenerate (all-skipped-rebalance) curve: with the
+    # curated ~34-name energy universe, the shared config's 20%-quantile /
+    # min-10-per-leg defaults skip every month and produce a flat curve
+    # (port_ret == 0 throughout, equity constant at 1.0). A real momentum
+    # book must show nonzero daily PnL and a non-constant equity path.
+    assert df["port_ret"].abs().sum() > 0
+    assert df["equity"].nunique() > 1
