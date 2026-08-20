@@ -189,8 +189,34 @@ look-ahead)**, over a $1M account for the window:
 
 The monitor **more than halved the strategy's max drawdown** (−8.8% → −3.6%) at a
 cost of ~3.7 pts of return — the risk-management trade a fast monitor is meant to
-deliver. See `monitoring/results/energy_pnl_3way.png`. *(A momentum + agentic
-version is produced the same way.)*
+deliver.
+
+![AL PCA: baseline vs strategy vs strategy + agentic monitor, 2020 oil crash](../monitoring/results/energy_pnl_3way.png)
+
+*Figure 1. AL PCA stat-arb over the 2020 oil crash. The agentic monitor (orange)
+tracks the strategy but cuts exposure on WATCH/ALERT signals (bottom panel),
+reducing max drawdown from −8.8% to −3.6%.*
+
+The same procedure applied to **JT momentum** is more dramatic. Momentum spiked early
+(energy names dispersed at the crash open) then whipsawed down, ending roughly flat
+(+1.9%) with a −28.5% swing. The agent — which raised `ALERT` on the crash onset day
+itself (2020-03-09) — cut exposure after the run-up, **locking in the early gains and
+avoiding the whipsaw**, so it improved *both* return and drawdown:
+
+| (JT momentum, 2020 oil crash) | Return | Max drawdown |
+|---|---|---|
+| Baseline (buy & hold energy) | −29.4% | −62.8% |
+| JT momentum | +1.9% | −28.5% |
+| **JT momentum + agentic** | **+13.7%** | **−9.8%** |
+
+![JT momentum: baseline vs strategy vs strategy + agentic monitor, 2020 oil crash](../monitoring/results/energy_pnl_3way_JT_MOM.png)
+
+*Figure 2. JT momentum over the 2020 oil crash. The monitor improved both return
+(+1.9% → +13.7%) and max drawdown (−28.5% → −9.8%).*
+
+**This contrast directly illustrates H3 (the advantage differs by strategy):** the
+monitor delivered pure *risk reduction* on the mean-neutral AL PCA book, but *both*
+higher return and lower risk on the whipsawed momentum book.
 
 > **Framing for interpretation.** The core hypotheses (H1–H3) are about **detection
 > quality** (latency, FPR, precision/recall), not PnL. The overlay above is an
