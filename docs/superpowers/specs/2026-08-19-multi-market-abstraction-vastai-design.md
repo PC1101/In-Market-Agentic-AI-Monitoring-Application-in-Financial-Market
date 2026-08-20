@@ -244,7 +244,17 @@ scripts/vast/
    deferred until the US curve data + FNSPID store are present on a run host (this backup
    machine lacks them); the mechanics are proven.
 3. **ASX 200 market** — providers, PIT stores, windows, recalibrate detectors, full run.
-4. **Global energy market** — providers incl. commodity macro, windows, full run.
+4. **Global energy market** ✅ *(done 2026-08-20)* — five providers built
+   (`providers/energy/{universe,news,macro,windows,pnl,profile}.py`): curated 34-name
+   megacap universe (free yfinance prices), GDELT news adapter, FRED commodity macro,
+   energy windows, and both strategy curves (JT momentum + AL PCA via single-universe
+   `defactoring='pca'`). `energy` MarketProfile registered; `run_classical --market energy`
+   runs end-to-end scoring the energy windows; **sp500 stays byte-identical** (golden path
+   green). Full monitoring suite green. Implemented via
+   `docs/superpowers/plans/2026-08-20-phase4-energy-strategy-pnl.md` (Task 8 vast.ai offload
+   skipped — the AL run is ~2 min, well under any offload threshold; the harness stays
+   validated for the batch/agentic-sweep case). *Deferred (external prereqs): live commodity
+   macro needs a FRED key; the full energy agentic loop needs a GDELT-built news store.*
 5. **Cross-market analysis** — extend `significance.py`/reporting to H1/H2/H3 across markets.
 
 Each phase is independently reviewable and leaves the repo green.
