@@ -59,7 +59,7 @@ RESULTS = XSECTIONAL_DIR / "results"
 
 def main() -> None:
     logger.info("Loading global-energy universe prices...")
-    prices = energy_universe.load_prices(start="2016-06-01", end="2022-12-31")
+    prices = energy_universe.load_prices(start="2016-06-01", end="2025-07-31")
     prices = prices.dropna(axis=1, how="all")
     logger.info("  %d tickers, %d daily observations", prices.shape[1], len(prices))
 
