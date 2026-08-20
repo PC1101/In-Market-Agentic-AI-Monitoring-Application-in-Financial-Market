@@ -82,14 +82,25 @@ def _ssh_run(inst: dict, remote_cmd: str, dry_run: bool) -> None:
 
 
 def _ssh_url(instance_id, dry_run: bool) -> tuple[str, int]:
-    """Resolve (host, port) for ssh via `vastai ssh-url` (handles proxy/direct)."""
+    """Resolve (host, port) for ssh, preferring the PROXY gateway.
+
+    vast.ai exposes two SSH paths: the proxy gateway (``ssh_host``=sshN.vast.ai +
+    ``ssh_port``, routed through vast.ai to the box's internal sshd) and a direct
+    port (``public_ipaddr``:``direct_port_start``, needs --direct). The direct port
+    is host-dependent and was observed to never open ("Connection refused") on
+    multiple hosts, so we use the proxy from ``show instances`` and fall back to
+    ``ssh-url`` only if the proxy fields are absent.
+    """
     if dry_run:
         return ("ssh.example.vast.ai", 12345)
-    out = _vastai("ssh-url", str(instance_id), dry_run=False, capture=True) or ""
-    # Format: ssh://root@ssh5.vast.ai:12345
-    m = re.search(r"root@([^:]+):(\d+)", out.strip())
+    out = _vastai("show", "instances", "--raw", dry_run=False, capture=True) or "[]"
+    for inst in json.loads(out):
+        if inst.get("id") == instance_id and inst.get("ssh_host") and inst.get("ssh_port"):
+            return (inst["ssh_host"], int(inst["ssh_port"]))
+    url = _vastai("ssh-url", str(instance_id), dry_run=False, capture=True) or ""
+    m = re.search(r"root@([^:]+):(\d+)", url.strip())
     if not m:
-        raise RuntimeError(f"could not parse ssh-url: {out!r}")
+        raise RuntimeError(f"could not resolve ssh host: {url!r}")
     return (m.group(1), int(m.group(2)))
 
 
