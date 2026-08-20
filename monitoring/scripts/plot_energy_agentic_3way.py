@@ -11,6 +11,7 @@ Renders monitoring/results/energy_pnl_3way.png.
 """
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -23,16 +24,27 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[2]
 START_CAP = 1_000_000
 WIN_START, WIN_END = "2020-02-14", "2020-05-29"
-AL_CURVE = REPO / "Stat Arb" / "statsArb-dev" / "results" / "equity_curve_energy_al.csv"
-AGENTIC_LOG = REPO / "monitoring" / "results" / "agentic_oil_crash_2020_AL_PCA.jsonl"
-OUT = REPO / "monitoring" / "results" / "energy_pnl_3way.png"
+
+#: per-strategy curve file + display label
+CURVES = {
+    "AL_PCA": (REPO / "Stat Arb" / "statsArb-dev" / "results" / "equity_curve_energy_al.csv",
+               "AL PCA"),
+    "JT_MOM": (REPO / "XSectional" / "results" / "equity_curve_energy.csv",
+               "JT momentum"),
+}
 
 #: monitor state -> fraction of capital deployed
 EXPOSURE = {"NORMAL": 1.0, "WATCH": 0.5, "ALERT": 0.0}
 
+# Set by main() from --strategy.
+STRATEGY = "AL_PCA"
+AGENTIC_LOG = REPO / "monitoring" / "results" / "agentic_oil_crash_2020_AL_PCA.jsonl"
+OUT = REPO / "monitoring" / "results" / "energy_pnl_3way.png"
+
 
 def _strategy_returns() -> pd.Series:
-    df = pd.read_csv(AL_CURVE, index_col=0, parse_dates=True).sort_index()
+    curve = CURVES[STRATEGY][0]
+    df = pd.read_csv(curve, index_col=0, parse_dates=True).sort_index()
     r = df["port_ret"].astype(float)
     return r.loc[WIN_START:WIN_END]
 
@@ -68,16 +80,26 @@ def _to_account(returns: pd.Series) -> pd.Series:
 
 
 def main() -> None:
+    global STRATEGY, AGENTIC_LOG, OUT
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--strategy", default="AL_PCA", choices=list(CURVES))
+    args = ap.parse_args()
+    STRATEGY = args.strategy
+    AGENTIC_LOG = REPO / "monitoring" / "results" / f"agentic_oil_crash_2020_{STRATEGY}.jsonl"
+    suffix = "" if STRATEGY == "AL_PCA" else f"_{STRATEGY}"
+    OUT = REPO / "monitoring" / "results" / f"energy_pnl_3way{suffix}.png"
+
     strat_r = _strategy_returns()
     idx = strat_r.index
     expo = _agent_exposure(idx)
     agentic_r = strat_r * expo
     base_r = _baseline_returns(idx)
 
+    slabel = CURVES[STRATEGY][1]
     curves = {
         "Baseline (buy & hold energy)": ("#6b7280", _to_account(base_r)),
-        "Strategy (AL PCA)": ("#1d4ed8", _to_account(strat_r)),
-        "Strategy + agentic (qwen2.5:3b)": ("#c2410c", _to_account(agentic_r)),
+        f"Strategy ({slabel})": ("#1d4ed8", _to_account(strat_r)),
+        f"{slabel} + agentic (qwen2.5:3b)": ("#c2410c", _to_account(agentic_r)),
     }
 
     fig, (ax1, ax2, ax3) = plt.subplots(
@@ -92,7 +114,7 @@ def main() -> None:
         ax2.fill_between(acct.index, (acct/acct.cummax()-1)*100, 0, color=color, alpha=0.30)
 
     ax1.axhline(START_CAP, color="#9ca3af", lw=1.0, ls="--")
-    ax1.set_title("Global energy — 2020 oil crash: baseline vs strategy vs strategy + agentic monitor\n"
+    ax1.set_title(f"Global energy — 2020 oil crash: baseline vs {slabel} vs {slabel} + agentic monitor\n"
                   "$1,000,000 account", fontsize=13, fontweight="bold")
     ax1.set_ylabel("Account value"); ax1.grid(True, alpha=0.25)
     ax1.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"${x/1e6:.2f}M"))
