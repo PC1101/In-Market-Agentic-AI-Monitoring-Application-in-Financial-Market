@@ -4,6 +4,15 @@ from pnl_loader import load_pnl, REQUIRED_COLUMNS
 
 REPO = Path(__file__).resolve().parents[2]
 JT_ENERGY = REPO / "XSectional" / "results" / "equity_curve_energy.csv"
+AL_ENERGY = REPO / "Stat Arb" / "statsArb-dev" / "results" / "equity_curve_energy_al.csv"
+
+
+def test_energy_al_curve_has_valid_schema():
+    assert AL_ENERGY.exists()
+    df = load_pnl(AL_ENERGY)
+    assert list(df.columns) == list(REQUIRED_COLUMNS)
+    assert len(df) > 100
+    assert df["port_ret"].abs().sum() > 0   # non-degenerate
 
 
 def test_energy_jt_curve_has_valid_schema():

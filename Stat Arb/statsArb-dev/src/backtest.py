@@ -7,7 +7,7 @@ from src import bt_tools
 from src.regime_filter import RegimeFilter
 
 class bt(object):
-    def __init__(self, prices_file_path, etf_name, st_dt, ed_dt, n_window=60, defactoring='etf', performance_only=False, kappa_min=None, progress=False, regime_filter_path=None, stress_threshold=0.40):
+    def __init__(self, prices_file_path, etf_name, st_dt, ed_dt, n_window=60, defactoring='etf', performance_only=False, kappa_min=None, progress=False, regime_filter_path=None, stress_threshold=0.40, pca_ret_path="results/pca_factoring/ret_pca_port.csv"):
 
         ## ETF and single stocks prices
         df = pd.read_csv(prices_file_path, index_col=['Date'], parse_dates=True).sort_index()
@@ -17,7 +17,7 @@ class bt(object):
 
 
         ## PCA portfolios returns
-        self.pca_port_ret = pd.read_csv("results/pca_factoring/ret_pca_port.csv", index_col=['Date'], parse_dates=True).sort_index()
+        self.pca_port_ret = pd.read_csv(pca_ret_path, index_col=['Date'], parse_dates=True).sort_index()
 
         self.st_dt = st_dt
         self.ed_dt = ed_dt
