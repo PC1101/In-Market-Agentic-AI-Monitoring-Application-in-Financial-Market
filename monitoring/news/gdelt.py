@@ -111,7 +111,8 @@ def fetch(query: str, start, end, maxrecords: int = 250,
 
 def build_gdelt_store(symbol_queries: dict[str, list[str]], start, end,
                       out_dir: str | Path, throttle_s: float = 5.0,
-                      english_only: bool = True, maxrecords: int = 250) -> dict[str, int]:
+                      english_only: bool = True, maxrecords: int = 250,
+                      fetch_retries: int = 6) -> dict[str, int]:
     """Fetch news for each symbol and write per-year parquet files (NewsStore layout).
 
     Args:
@@ -126,10 +127,20 @@ def build_gdelt_store(symbol_queries: dict[str, list[str]], start, end,
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     frames: list[pd.DataFrame] = []
+    skipped: list[str] = []
     for ticker, terms in symbol_queries.items():
-        arts = fetch(build_query(terms), start, end, maxrecords=maxrecords)
+        try:
+            arts = fetch(build_query(terms), start, end, maxrecords=maxrecords,
+                         retries=fetch_retries)
+        except Exception as e:  # rate-limit or transient error: skip this ticker, keep going
+            skipped.append(f"{ticker}({type(e).__name__})")
+            time.sleep(throttle_s)
+            continue
         frames.append(articles_to_frame(arts, ticker, english_only=english_only))
         time.sleep(throttle_s)
+    if skipped:
+        print(f"gdelt: skipped {len(skipped)}/{len(symbol_queries)} tickers "
+              f"(fetch failed): {', '.join(skipped)}")
     if not frames:
         return {}
     allrows = pd.concat(frames, ignore_index=True)
