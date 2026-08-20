@@ -97,8 +97,11 @@ def _ssh_exec_retry(instance_id, remote_cmd: str, dry_run: bool,
                     attempts: int = 12, delay_s: int = 10) -> str:
     """SSH a command with retries (the instance sshd lags 'running' by ~1 min)."""
     host, port = _ssh_url(instance_id, dry_run)
+    # ServerAlive* keeps the connection up during long remote jobs (setup + model
+    # pull + ingest + agentic loop can run 20-30 min) so it isn't dropped as idle.
     ssh = ["ssh", "-p", str(port), "-o", "StrictHostKeyChecking=no",
            "-o", "UserKnownHostsFile=/dev/null", "-o", "ConnectTimeout=10",
+           "-o", "ServerAliveInterval=30", "-o", "ServerAliveCountMax=240",
            f"root@{host}", remote_cmd]
     if dry_run:
         print(f"  [dry-run] {' '.join(ssh)}")
