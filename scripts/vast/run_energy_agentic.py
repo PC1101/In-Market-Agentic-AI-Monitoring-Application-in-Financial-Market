@@ -46,7 +46,7 @@ WINDOW_INGEST = {
     "calm_energy_2019": ("2018-12-01", "2019-09-30"),
 }
 
-IMAGE = "python:3.12-slim"
+IMAGE = "ollama/ollama:latest"  # SSH-proven via the smoke test; ollama pre-installed
 DISK_GB = 24
 RESULTS_LOCAL = REPO / "monitoring" / "results" / "vast_energy"
 
@@ -54,22 +54,21 @@ RESULTS_LOCAL = REPO / "monitoring" / "results" / "vast_energy"
 def _remote_setup_and_run(window: str, strategy: str, model: str) -> str:
     """The single bash script run on the box (setup -> ingest -> agentic run)."""
     ing_start, ing_end = WINDOW_INGEST[window]
+    model_tag = model.split(":", 1)[-1]
     return f"""set -e
-echo '=== apt + ollama ==='
-apt-get update -qq && apt-get install -y -qq curl >/dev/null
-curl -fsSL https://ollama.com/install.sh | sh
-echo '=== python deps ==='
-pip install -q pandas numpy pyarrow
+echo '=== python3 + deps (ollama already in image) ==='
+apt-get update -qq && apt-get install -y -qq python3 python3-pip >/dev/null
+python3 -m pip install -q --break-system-packages pandas numpy pyarrow
 echo '=== start ollama + pull model ==='
 (ollama serve >/root/ollama.log 2>&1 &) ; sleep 8
-ollama pull {model.split(':',1)[-1]}
+ollama pull {model_tag}
 echo '{{}}' > /root/empty_finbert.json
 cd /root/monitoring
 echo '=== ingest GDELT energy news ({ing_start}..{ing_end}) on the box clean IP ==='
-python -c "from news import gdelt; from providers.energy.news import energy_symbol_queries, DEFAULT_ROOT; \
+python3 -c "from news import gdelt; from providers.energy.news import energy_symbol_queries, DEFAULT_ROOT; \
 print(gdelt.build_gdelt_store(energy_symbol_queries(), '{ing_start}', '{ing_end}', DEFAULT_ROOT, throttle_s=5, maxrecords=250))"
 echo '=== run energy agentic loop ({window} x {strategy} x {model}) ==='
-python run_agentic.py --market energy --window {window} --strategy {strategy} \
+python3 run_agentic.py --market energy --window {window} --strategy {strategy} \
   --model {model} --finbert-cache /root/empty_finbert.json
 echo '=== DONE_AGENTIC ==='
 """
