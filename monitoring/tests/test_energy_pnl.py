@@ -53,3 +53,15 @@ def test_energy_profile_registers_all_providers():
     assert isinstance(prof.news, NewsProvider)
     assert isinstance(prof.macro, MacroProvider)
     assert len(prof.windows) >= 4
+
+
+import subprocess, sys
+MON = REPO / "monitoring"
+
+
+def test_classical_energy_runs_and_scores_energy_windows():
+    out = subprocess.run([sys.executable, "run_classical.py", "--market", "energy", "--model", "stub"],
+                         cwd=MON, capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    # energy windows must be the ones scored (not US windows)
+    assert "oil_crash_2020" in out.stdout or "energy_spike_2022" in out.stdout

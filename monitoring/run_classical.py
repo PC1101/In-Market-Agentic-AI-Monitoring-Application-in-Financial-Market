@@ -36,6 +36,37 @@ RESULTS = Path(__file__).resolve().parent / "results"
 from providers.sp500.pnl import STRATEGY_CURVES  # noqa: E402
 
 
+def _select_curves(profile) -> "dict[str, list[Path]]":
+    """Return ``{strategy: [curve Path, ...]}`` for the resolved market profile.
+
+    sp500 returns the canonical ``providers.sp500.pnl.STRATEGY_CURVES`` unchanged
+    (a fresh dict with the same Path lists) so its inputs stay byte-identical.
+    energy adapts its single-Path-per-strategy ``CURVES`` into the list-valued
+    shape the run loop expects. Any other registered market with a module-level
+    ``CURVES`` on its pnl provider is routed the same way; markets without one
+    fail closed with a message naming the market.
+    """
+    if profile.key == "sp500":
+        return {s: list(paths) for s, paths in STRATEGY_CURVES.items()}
+    if profile.key == "energy":
+        from providers.energy.pnl import CURVES
+        return {s: [p] for s, p in CURVES.items()}
+    # Generic fallback for any other registered market whose pnl module exposes
+    # a module-level CURVES mapping ({strategy: Path}); else fail closed.
+    import importlib
+    try:
+        mod = importlib.import_module(type(profile.pnl).__module__)
+        curves = getattr(mod, "CURVES")
+    except (ImportError, AttributeError):
+        curves = None
+    if not curves:
+        raise SystemExit(
+            f"--market {profile.key}: no curve routing available "
+            f"(pnl module exposes no CURVES mapping)."
+        )
+    return {s: [p] for s, p in curves.items()}
+
+
 def _hmm_training_returns(curve_paths) -> "pd.Series | None":
     """Load a pre-event training series for the HMM (returns before 2007-01-01).
 
@@ -63,16 +94,19 @@ def _new_detectors(train_returns=None):
             DistributionalThreshold()]
 
 
-def _windows_in_curve(series: pd.Series, end_tol_days: int = 7):
+def _windows_in_curve(series: pd.Series, end_tol_days: int = 7, windows_universe=ALL_WINDOWS):
     """Return the windows covered by a curve's date span.
 
     The curve must start on/before the window and extend to within ``end_tol_days`` of
     the window end (tolerating minor data-boundary gaps, e.g. a curve that ends one
     trading day short of a calm window's nominal close).
+
+    ``windows_universe`` is the market's window set; it defaults to the US
+    ``ALL_WINDOWS`` so existing callers (and the sp500 path) are unchanged.
     """
     lo, hi = series.index.min(), series.index.max()
     tol = pd.Timedelta(days=end_tol_days)
-    return [w for w in ALL_WINDOWS if w.start_ts >= lo and w.end_ts <= hi + tol]
+    return [w for w in windows_universe if w.start_ts >= lo and w.end_ts <= hi + tol]
 
 
 def _n_trading_days(series: pd.Series, window) -> int:
@@ -81,7 +115,7 @@ def _n_trading_days(series: pd.Series, window) -> int:
 
 
 def run_strategy(name: str, curve_paths, agent_logger: RunLogger | None,
-                 agent_model: LocalModel | None = None):
+                 agent_model: LocalModel | None = None, windows_universe=ALL_WINDOWS):
     """Run all detectors on a strategy's curves and score every covered window."""
     # detector name -> list[WindowMetrics] across all windows
     per_detector: dict[str, list[WindowMetrics]] = {}
@@ -94,7 +128,7 @@ def run_strategy(name: str, curve_paths, agent_logger: RunLogger | None,
         if not Path(path).exists():
             continue
         series = returns_series(load_pnl(path))
-        windows = _windows_in_curve(series)
+        windows = _windows_in_curve(series, windows_universe=windows_universe)
         if not windows:
             continue
 
@@ -144,15 +178,14 @@ def main():
                     help="market profile key (default: sp500)")
     args = ap.parse_args()
 
-    # Validate the requested market. Phase 1 wires sp500 end-to-end; other markets
-    # register their providers but curve routing via profile.pnl lands in Phase 3.
+    # Market-aware curve selection: route BOTH curves and the window universe
+    # through the resolved profile so every market scores against its own
+    # windows. sp500 yields exactly its legacy inputs (its profile.windows ARE
+    # the US ALL_WINDOWS and its curves ARE providers.sp500.pnl.STRATEGY_CURVES),
+    # so the sp500 path stays byte-identical.
     from config.profiles import get_profile
     profile = get_profile(args.market)
-    if profile.key != "sp500":
-        raise SystemExit(
-            f"--market {profile.key}: only 'sp500' is wired end-to-end in Phase 1 "
-            f"(generic curve routing via profile.pnl lands in Phase 3)."
-        )
+    strategy_curves = _select_curves(profile)
 
     agent_model = make_model(args.model)
 
@@ -165,7 +198,7 @@ def main():
     summary = {}
     detector_order = ["page_hinkley", "bocpd", "hmm", "distributional", "aggregate"]
 
-    for strat, paths in STRATEGY_CURVES.items():
+    for strat, paths in strategy_curves.items():
         missing = [str(p) for p in paths if not Path(p).exists()]
         if len(missing) == len(paths):
             print(f"\n### {strat}: NO curves found — data pending. Missing:")
@@ -175,7 +208,8 @@ def main():
             continue
 
         headline, per_detector, covered = run_strategy(strat, paths, agent_logger,
-                                                       agent_model=agent_model)
+                                                       agent_model=agent_model,
+                                                       windows_universe=profile.windows)
 
         print(f"\n### {strat} — windows covered: {sorted(covered)}")
         for p in paths:
