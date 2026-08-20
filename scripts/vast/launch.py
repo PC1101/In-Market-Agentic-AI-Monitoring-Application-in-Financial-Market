@@ -94,8 +94,14 @@ def _ssh_url(instance_id, dry_run: bool) -> tuple[str, int]:
 
 
 def _ssh_exec_retry(instance_id, remote_cmd: str, dry_run: bool,
-                    attempts: int = 12, delay_s: int = 10) -> str:
-    """SSH a command with retries (the instance sshd lags 'running' by ~1 min)."""
+                    attempts: int = 30, delay_s: int = 12) -> str:
+    """SSH a command with retries.
+
+    A freshly-'running' vast.ai box can take several minutes to open its SSH port
+    (direct-mode port mapping especially), returning 'Connection refused' until
+    then — so the default budget is ~6 min (30 x 12s). The long-running job call
+    passes attempts=1 since the connection is already proven by an earlier call.
+    """
     host, port = _ssh_url(instance_id, dry_run)
     # ServerAlive* keeps the connection up during long remote jobs (setup + model
     # pull + ingest + agentic loop can run 20-30 min) so it isn't dropped as idle.
