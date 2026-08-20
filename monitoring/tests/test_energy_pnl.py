@@ -28,3 +28,28 @@ def test_energy_jt_curve_has_valid_schema():
     # book must show nonzero daily PnL and a non-constant equity path.
     assert df["port_ret"].abs().sum() > 0
     assert df["equity"].nunique() > 1
+
+
+from providers.base import StrategyPnLProvider
+
+
+def test_energy_pnl_conforms_and_serves_both_strategies():
+    from providers.energy.pnl import EnergyPnL
+    p = EnergyPnL()
+    assert isinstance(p, StrategyPnLProvider)
+    assert set(p.strategies()) == {"AL_PCA", "JT_MOM"}
+    s = p.returns("JT_MOM")
+    assert s.name == "port_ret" and len(s) > 250
+
+
+from config.profiles import get_profile
+from providers.base import NewsProvider, MacroProvider
+
+
+def test_energy_profile_registers_all_providers():
+    prof = get_profile("energy")
+    assert prof.key == "energy" and prof.base_ccy == "USD"
+    assert isinstance(prof.pnl, StrategyPnLProvider)
+    assert isinstance(prof.news, NewsProvider)
+    assert isinstance(prof.macro, MacroProvider)
+    assert len(prof.windows) >= 4

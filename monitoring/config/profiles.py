@@ -29,6 +29,8 @@ def get_profile(key: str) -> MarketProfile:
         # Import known markets lazily so entry points need not import each package.
         if key == "sp500":
             import providers.sp500.profile  # noqa: F401  (registers on import)
+        elif key == "energy":
+            import providers.energy.profile  # noqa: F401  (registers on import)
     if key not in REGISTRY:
         raise KeyError(f"unknown market '{key}'; registered: {sorted(REGISTRY)}")
     return REGISTRY[key]
