@@ -1,0 +1,32 @@
+{
+  "AL PCA Stat Arb": {
+    "cagr": -0.084403,
+    "ann_vol": 0.114795,
+    "sharpe": -0.7352,
+    "sortino": -0.7029,
+    "omega": 1.8892,
+    "max_dd": -0.216725,
+    "calmar": -0.3894,
+    "tail_ratio": 0.8008,
+    "downside_dev": 0.12007,
+    "win_rate": 0.4966,
+    "gain_to_pain": -0.1108,
+    "terminal_value": 851674.42,
+    "total_return": -0.143596
+  },
+  "ASX 200 EW Benchmark": {
+    "cagr": 0.103399,
+    "ann_vol": 0.150798,
+    "sharpe": 0.6857,
+    "sortino": 0.693,
+    "omega": 2.1366,
+    "max_dd": -0.154356,
+    "calmar": 0.6699,
+    "tail_ratio": 0.9538,
+    "downside_dev": 0.149202,
+    "win_rate": 0.5214,
+    "gain_to_pain": 0.1366,
+    "terminal_value": 1235515.44,
+    "total_return": 0.188833
+  }
+}

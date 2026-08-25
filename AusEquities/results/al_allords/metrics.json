@@ -1,0 +1,26 @@
+{
+  "All Ords AL Stat Arb (gross)": {
+    "cagr": 0.061669,
+    "vol": 0.102033,
+    "sharpe": 0.604397,
+    "max_dd": -0.107092,
+    "total_return": 0.110931,
+    "terminal_value": 1116555.538368
+  },
+  "All Ords AL Stat Arb (net)": {
+    "cagr": -0.13747,
+    "vol": 0.101865,
+    "sharpe": -1.349534,
+    "max_dd": -0.23913,
+    "total_return": -0.228927,
+    "terminal_value": 771985.142956
+  },
+  "ASX 200 EW Buy & Hold": {
+    "cagr": 0.103399,
+    "vol": 0.150798,
+    "sharpe": 0.685677,
+    "max_dd": -0.154356,
+    "total_return": 0.188833,
+    "terminal_value": 1235515.441999
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "JT Momentum 12-1": {
+    "cagr": -0.294153,
+    "ann_vol": 0.281512,
+    "sharpe": -1.0449,
+    "sortino": -0.9772,
+    "omega": 1.8316,
+    "max_dd": -0.385963,
+    "calmar": -0.7621,
+    "tail_ratio": 0.8131,
+    "downside_dev": 0.30103,
+    "win_rate": 0.469,
+    "gain_to_pain": -0.1684,
+    "terminal_value": 739261.54,
+    "total_return": -0.268323
+  },
+  "ASX 200 EW Benchmark": {
+    "cagr": 0.032273,
+    "ann_vol": 0.156437,
+    "sharpe": 0.2063,
+    "sortino": 0.208,
+    "omega": 2.0486,
+    "max_dd": -0.13255,
+    "calmar": 0.2435,
+    "tail_ratio": 0.859,
+    "downside_dev": 0.155139,
+    "win_rate": 0.5,
+    "gain_to_pain": 0.0486,
+    "terminal_value": 1235515.44,
+    "total_return": 0.028896
+  }
+}

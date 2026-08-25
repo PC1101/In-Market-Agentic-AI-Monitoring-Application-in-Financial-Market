@@ -1,0 +1,4 @@
+Sector,N Stocks,N Trades,Gross CAGR,Net CAGR,Sector TR CAGR,Net Sharpe,Net MaxDD,TC Drag $
+Materials,12,122,+24.1%,+12.0%,+nan%,0.33,-31.1%,"$241,842"
+Financials,16,128,-0.7%,-8.8%,+nan%,-0.39,-33.8%,"$136,453"
+Industrials,11,67,-7.0%,-14.1%,+nan%,-0.40,-34.0%,"$113,681"
