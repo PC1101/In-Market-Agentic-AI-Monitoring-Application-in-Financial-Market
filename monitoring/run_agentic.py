@@ -36,7 +36,7 @@ import pandas as pd
 from pnl_loader import load_pnl, returns_series
 from windows import get_window
 from detectors import PageHinkley, BOCPD, HMMDetector, DistributionalThreshold, aggregate_alarms
-from run_classical import STRATEGY_CURVES, _hmm_training_returns
+from run_classical import STRATEGY_CURVES, _hmm_training_returns, _select_curves
 from agentic import as_of_context, RunLogger, run_supervisor
 from agentic.guardrails import assert_no_lookahead, LookaheadError, mask_dates_in_context, mask_dates_in_articles
 from agentic.model import default_model, DeadRunnerError
@@ -132,12 +132,32 @@ def _recent(alarms: list, day: pd.Timestamp, days: int = RECENT_DAYS) -> bool:
     return any(lo < pd.Timestamp(a) <= day for a in alarms)
 
 
+def _resolve_window(profile, name: str):
+    """Resolve a window by name against the market's profile window set.
+
+    sp500 preserves its legacy resolution (dev + test windows via ``get_window``)
+    so every S&P 500 window name that worked before still works. Other markets
+    (e.g. energy) resolve from their own ``profile.windows`` and fail closed —
+    naming the market — when the window is not part of that market.
+    """
+    for w in profile.windows:
+        if w.name == name:
+            return w
+    if profile.key == "sp500":
+        return get_window(name)  # legacy dev+test lookup, unchanged for sp500
+    raise SystemExit(
+        f"--window {name!r} not in market {profile.key!r}; "
+        f"known windows: {[w.name for w in profile.windows]}"
+    )
+
+
 def run_window(series: pd.Series, window, store: NewsStore | None, model,
                logger: RunLogger | None = None, macro_dir=MACRO_DIR,
                max_articles: int = 40, strategy: str | None = None,
                condition: str = "A", skip_dates: set | None = None,
                finbert_cache: dict[str, float] | None = None,
-               context_cache: dict | None = None) -> list[dict]:
+               context_cache: dict | None = None,
+               strategy_curves: dict | None = None) -> list[dict]:
     """Run the daily agentic loop over one window. Returns one record per trading day.
 
     skip_dates: set of date strings (YYYY-MM-DD) already processed — these days
@@ -149,7 +169,8 @@ def run_window(series: pd.Series, window, store: NewsStore | None, model,
     """
     # Classical detectors run continuously over the full curve (warm-up history included).
     # HMM is fit on pre-event training data when available (out-of-sample for event windows).
-    hmm_train = _hmm_training_returns(STRATEGY_CURVES.get(strategy, [])) if strategy else None
+    _curves = strategy_curves if strategy_curves is not None else STRATEGY_CURVES
+    hmm_train = _hmm_training_returns(_curves.get(strategy, [])) if strategy else None
     results = [d.detect(series) for d in
                (PageHinkley(), BOCPD(), HMMDetector(train_returns=hmm_train),
                 DistributionalThreshold())]
@@ -284,6 +305,7 @@ def run_window(series: pd.Series, window, store: NewsStore | None, model,
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--window", default="quant_meltdown_2007")
+    ap.add_argument("--market", default="sp500", help="market profile key (default: sp500)")
     ap.add_argument("--strategy", default="AL_PCA", choices=list(STRATEGY_CURVES))
     ap.add_argument("--model", default=None, help="stub | ollama | ollama:<name> (default: MONITOR_MODEL env or stub)")
     ap.add_argument("--condition", default="A", choices=["A", "B"],
@@ -296,8 +318,15 @@ def main() -> None:
                     help="path to pre-computed context JSON (avoids heavy parquet I/O)")
     args = ap.parse_args()
 
-    window = get_window(args.window)
-    curve = next((p for p in STRATEGY_CURVES[args.strategy]
+    # Market-aware routing: resolve curves and the window from the profile so
+    # non-sp500 markets (e.g. energy) run their own curves + windows. sp500
+    # yields exactly its legacy inputs, so its path is unchanged.
+    from config.profiles import get_profile
+    profile = get_profile(args.market)
+    strategy_curves = _select_curves(profile)
+
+    window = _resolve_window(profile, args.window)
+    curve = next((p for p in strategy_curves[args.strategy]
                   if Path(p).exists()
                   and (s := returns_series(load_pnl(p))).index.min() <= window.start_ts
                   and s.index.max() >= window.end_ts - pd.Timedelta(days=7)), None)
@@ -338,7 +367,8 @@ def main() -> None:
     records = run_window(series, window, store, model, logger=logger,
                          strategy=args.strategy, condition=args.condition,
                          skip_dates=skip_dates, max_articles=args.max_articles,
-                         finbert_cache=finbert_cache, context_cache=context_cache)
+                         finbert_cache=finbert_cache, context_cache=context_cache,
+                         strategy_curves=strategy_curves)
 
     modes = pd.Series([r["triage_mode"] for r in records]).value_counts().to_dict()
     n_assessed = sum("assessment" in r for r in records)

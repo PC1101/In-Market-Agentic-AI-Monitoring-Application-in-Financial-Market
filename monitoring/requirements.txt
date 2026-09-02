@@ -4,3 +4,6 @@ scipy>=1.10.0
 pytest>=7.4.0
 pyarrow>=15
 huggingface_hub>=0.23
+
+# Energy provider (Phase 4): free equity prices for the curated megacap universe.
+yfinance>=0.2

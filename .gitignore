@@ -24,3 +24,7 @@ data/macro/
 
 # FNSPID news caches (multi-GB; rebuilt by src/news_loader.py)
 Stat Arb/statsArb-dev/data/news/*.parquet
+
+# Literature corpus: keep the index + README + download script tracked,
+# but do NOT commit the copyrighted PDFs to this public repo.
+data/literature/**/*.pdf
