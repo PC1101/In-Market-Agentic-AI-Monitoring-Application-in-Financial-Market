@@ -5,7 +5,7 @@
 #   usage: bash data/literature/download.sh
 set -u
 cd "$(dirname "$0")"
-mkdir -p by_author
+mkdir -p by_author by_topic
 UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
 # filename|url   (topical corpus + author-attributed, all open-access)
@@ -31,6 +31,18 @@ by_author/chenyingzhang_egret__nber_w17828_chinas_financial_system.pdf|https://w
 by_author/penghu_loshu__arxiv_1008.3034_snell_envelope_multiplicative.pdf|https://arxiv.org/pdf/1008.3034
 by_author/penghu_loshu__arxiv_1107.1948_concentration_interacting_particle.pdf|https://arxiv.org/pdf/1107.1948
 by_author/penghu_loshu__inria_robustness_snell_envelope.pdf|https://people.bordeaux.inria.fr/pierre.delmoral/robustness-snell-particle.pdf
+by_topic/changepoint__arxiv_0710.3742_adams_mackay_bocpd.pdf|https://arxiv.org/pdf/0710.3742
+by_topic/changepoint__arxiv_2307.02375_bocpd_order_flow_market_impact.pdf|https://arxiv.org/pdf/2307.02375
+by_topic/changepoint__arxiv_2104.03667_regime_detection_realized_cov.pdf|https://arxiv.org/pdf/2104.03667
+by_topic/earlywarning__arxiv_2010.10132_are_crises_predictable_ews_review.pdf|https://arxiv.org/pdf/2010.10132
+by_topic/llm_agent__arxiv_2412.20138_tradingagents_multiagent.pdf|https://arxiv.org/pdf/2412.20138
+by_topic/llm_agent__arxiv_2510.07920_profit_mirage_info_leakage.pdf|https://arxiv.org/pdf/2510.07920
+by_topic/llm_agent__arxiv_2501.12399_finsphere_realtime_agent.pdf|https://arxiv.org/pdf/2501.12399
+by_topic/llm_agent__arxiv_2411.08899_finvision_multiagent.pdf|https://arxiv.org/pdf/2411.08899
+by_topic/llm_agent__arxiv_2507.20474_mountainlion_multimodal_agent.pdf|https://arxiv.org/pdf/2507.20474
+by_topic/llm_agent__arxiv_2503.23037_agentic_llms_survey.pdf|https://arxiv.org/pdf/2503.23037
+by_topic/crowding__arxiv_2006.08110_suffocating_fire_sales.pdf|https://arxiv.org/pdf/2006.08110
+by_topic/crowding__ecb_measuring_crowding_hedge_fund_trades.pdf|https://www.ecb.europa.eu/press/financial-stability-publications/fsr/focus/2007/pdf/ecb~8b4e5b1675.fsrbox200712_03.pdf
 EOF
 )
 
