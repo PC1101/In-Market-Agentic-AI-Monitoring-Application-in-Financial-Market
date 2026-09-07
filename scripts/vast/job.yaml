@@ -1,0 +1,13 @@
+# vast.ai job spec — one monitoring run on a rented GPU.
+# Stamped into the result dir alongside the git SHA + image for reproducibility.
+
+market: sp500            # sp500 | asx200 (Phase 3) | energy (Phase 4)
+strategy: AL_PCA         # AL_PCA | JT_MOM
+window: quant_meltdown_2007
+model: ollama:qwen2.5:3b
+condition: A             # A=standard, B=date-masked (leakage control)
+seed: 0
+
+# Instance provisioning (all bounded by the --max-price cap in launch.py).
+image: ollama/ollama:latest
+disk_gb: 20
